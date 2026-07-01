@@ -1,5 +1,5 @@
 import { Code2, Eye, FileCode, PanelRightClose, PanelRightOpen, Settings, TerminalSquare } from 'lucide-react';
-import { EditorPane } from './EditorPane';
+import EditorPane from './EditorPane';
 import { FileExplorer } from './FileExplorer';
 import { PreviewPane } from './PreviewPane';
 import { SettingsPanel } from './SettingsPanel';

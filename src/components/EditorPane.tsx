@@ -54,3 +54,5 @@ export function EditorPane() {
     </section>
   );
 }
+
+export default EditorPane;
