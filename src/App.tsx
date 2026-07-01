@@ -3,6 +3,7 @@ import { ChatBox } from './components/ChatBox';
 import { Header } from './components/Header';
 import { MessageList } from './components/MessageList';
 import { Sidebar } from './components/Sidebar';
+import { SessionSidebar } from './components/SessionSidebar';
 import { bootWebContainer } from './lib/webcontainer';
 import { useWorkbenchStore } from './stores/workbenchStore';
 
@@ -60,6 +61,7 @@ export default function App() {
     <div className="app">
       <Header />
       <main className={isSidebarCollapsed ? 'workspace sidebarCollapsed' : 'workspace'}>
+        <SessionSidebar />
         <section className="conversation">
           <MessageList />
           <ChatBox />

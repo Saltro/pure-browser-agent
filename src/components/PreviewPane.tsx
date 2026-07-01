@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { useWorkbenchStore } from '../stores/workbenchStore';
 
 export function PreviewPane() {
-  const previewUrl = useWorkbenchStore((state) => state.previewUrl);
+  const previewUrl = useWorkbenchStore((state) => state.iframeUrl || state.previewUrl);
   return (
     <section className="panel previewPane">
       <div className="panelTitle">Preview {previewUrl && <a href={previewUrl} target="_blank"><ExternalLink size={14} /></a>}</div>

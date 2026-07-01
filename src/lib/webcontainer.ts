@@ -66,9 +66,15 @@ export async function syncFilesToContainer(files: FileNode[]) {
   for (const file of files) await writeContainerFile(file.path, file.content);
 }
 
-export async function runContainerCommand(command: string, onData: (chunk: string) => void) {
+export async function runContainerCommand(command: string, onData: (chunk: string) => void, signal?: AbortSignal) {
   const wc = getWebContainer();
   const process = await wc.spawn('jsh', ['-c', command]);
+  let aborted = false;
+  const abort = () => {
+    aborted = true;
+    process.kill();
+  };
+  signal?.addEventListener('abort', abort, { once: true });
   const outputDone = process.output.pipeTo(
     new WritableStream({
       write(data) {
@@ -77,6 +83,8 @@ export async function runContainerCommand(command: string, onData: (chunk: strin
     })
   );
   const exitCode = await process.exit;
+  signal?.removeEventListener('abort', abort);
   await outputDone.catch(() => undefined);
+  if (aborted) throw new DOMException('Command interrupted', 'AbortError');
   return exitCode;
 }

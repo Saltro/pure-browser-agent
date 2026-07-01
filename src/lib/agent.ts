@@ -1,19 +1,26 @@
-import { callOpenAICompatible, type ChatMessage } from './llm';
+import { streamOpenAICompatible, type ChatMessage } from './llm';
 import { readContainerFile, runContainerCommand, syncFilesToContainer, writeContainerFile } from './webcontainer';
 import { useWorkbenchStore } from '../stores/workbenchStore';
 import type { ToolCall } from '../types/workbench';
 
 const systemPrompt = `You are an agent running inside Pure Browser Agent, a browser-only WebContainer workbench.
 You can inspect and edit files and run commands only inside the WebContainer virtual environment.
+You can also use iframe_open to open a URL in the embedded preview iframe when the user asks to inspect or navigate a browser page.
 Prefer small steps. Use tools when you need workspace state.
 When you change code, use write_file. When you need to verify, use run_command.
 Final answers should be concise and include what changed and how it was verified.`;
+
+let activeAbortController: AbortController | null = null;
+
+export function interruptAgentTurn() {
+  activeAbortController?.abort();
+}
 
 function shouldConfirmCommand(command: string) {
   return /(^|\s)(rm|mv|cp|chmod|chown|curl|wget|git|npm\s+publish|pnpm\s+publish|yarn\s+npm\s+publish)\b/.test(command);
 }
 
-async function executeTool(call: ToolCall) {
+async function executeTool(call: ToolCall, signal: AbortSignal) {
   const store = useWorkbenchStore.getState();
   switch (call.name) {
     case 'list_files':
@@ -44,23 +51,43 @@ async function executeTool(call: ToolCall) {
       store.setActiveTab('terminal');
       store.appendTerminal(`\n$ ${command}\n`);
       let output = '';
-      const exitCode = await runContainerCommand(command, (chunk) => {
-        output += chunk;
-        store.appendTerminal(chunk);
-      });
+      const exitCode = await runContainerCommand(
+        command,
+        (chunk) => {
+          output += chunk;
+          store.appendTerminal(chunk);
+        },
+        signal
+      );
       return { command, exitCode, output: output.slice(-4000) };
+    }
+    case 'iframe_open': {
+      const url = String(call.arguments.url || '');
+      if (!url) throw new Error('iframe_open requires a url');
+      store.setIframeUrl(url);
+      store.setActiveTab('preview');
+      return { url, opened: true };
     }
     default:
       throw new Error(`Unknown tool: ${call.name}`);
   }
 }
 
+function activeMessagesForPrompt() {
+  const store = useWorkbenchStore.getState();
+  return store.getActiveSession().messages;
+}
+
 export async function runAgentTurn(userInput: string) {
+  interruptAgentTurn();
+  const abortController = new AbortController();
+  activeAbortController = abortController;
+  const signal = abortController.signal;
   const store = useWorkbenchStore.getState();
   store.addMessage({ type: 'user_message', content: userInput });
 
   const fileList = store.files.map((file) => file.path).join('\n');
-  const recentMessages = store.messages
+  const recentMessages = activeMessagesForPrompt()
     .slice(-12)
     .map((message) => `${message.type}: ${'content' in message ? message.content : JSON.stringify(message)}`)
     .join('\n');
@@ -73,35 +100,52 @@ export async function runAgentTurn(userInput: string) {
     }
   ];
 
-  for (let step = 0; step < 8; step++) {
-    const response = await callOpenAICompatible(useWorkbenchStore.getState().llm, messages);
+  try {
+    for (let step = 0; step < 8; step++) {
+      signal.throwIfAborted();
+      const assistantMessageId = store.addMessage({ type: 'assistant_message', content: '', streaming: true });
+      const response = await streamOpenAICompatible(useWorkbenchStore.getState().llm, messages, {
+        signal,
+        onToken: (token) => store.appendAssistantMessage(assistantMessageId, token)
+      });
+      store.updateMessage(assistantMessageId, { streaming: false });
 
-    if (!response.toolCalls.length) {
-      const content = response.content || 'Done.';
-      store.addMessage({ type: 'assistant_message', content });
-      return content;
-    }
+      if (!response.toolCalls.length) {
+        if (!response.content) store.updateMessage(assistantMessageId, { content: 'Done.' });
+        return response.content || 'Done.';
+      }
 
-    messages.push(response.assistantMessage);
-    if (response.content) store.addMessage({ type: 'assistant_message', content: response.content });
+      if (!response.content) store.updateMessage(assistantMessageId, { content: `Calling ${response.toolCalls.map((call) => call.name).join(', ')}...` });
+      messages.push(response.assistantMessage);
 
-    for (const toolCall of response.toolCalls) {
-      const eventId = store.addMessage({ type: 'tool_call', toolName: toolCall.name, input: toolCall.arguments, status: 'running' });
-      try {
-        const result = await executeTool(toolCall);
-        store.updateToolStatus(eventId, 'success');
-        store.addMessage({ type: 'tool_result', toolName: toolCall.name, output: result });
-        messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify(result).slice(0, 6000) });
-      } catch (error) {
-        store.updateToolStatus(eventId, 'error');
-        const message = error instanceof Error ? error.message : String(error);
-        store.addMessage({ type: 'tool_result', toolName: toolCall.name, output: { error: message } });
-        messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify({ error: message }) });
+      for (const toolCall of response.toolCalls) {
+        signal.throwIfAborted();
+        const eventId = store.addMessage({ type: 'tool_call', toolName: toolCall.name, input: toolCall.arguments, status: 'running' });
+        try {
+          const result = await executeTool(toolCall, signal);
+          store.updateToolStatus(eventId, 'success');
+          store.addMessage({ type: 'tool_result', toolName: toolCall.name, output: result });
+          messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify(result).slice(0, 6000) });
+        } catch (error) {
+          store.updateToolStatus(eventId, 'error');
+          const message = error instanceof Error ? error.message : String(error);
+          store.addMessage({ type: 'tool_result', toolName: toolCall.name, output: { error: message } });
+          messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify({ error: message }) });
+          if (error instanceof DOMException && error.name === 'AbortError') throw error;
+        }
       }
     }
-  }
 
-  const final = 'Reached max agent steps. Please continue if you want me to keep going.';
-  store.addMessage({ type: 'assistant_message', content: final });
-  return final;
+    const final = 'Reached max agent steps. Please continue if you want me to keep going.';
+    store.addMessage({ type: 'assistant_message', content: final });
+    return final;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      store.addMessage({ type: 'assistant_message', content: 'Interrupted.' });
+      return 'Interrupted.';
+    }
+    throw error;
+  } finally {
+    if (activeAbortController === abortController) activeAbortController = null;
+  }
 }

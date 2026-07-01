@@ -8,7 +8,7 @@ function timeLabel(ts: number) {
 }
 
 export function MessageList() {
-  const messages = useWorkbenchStore((state) => state.messages);
+  const messages = useWorkbenchStore((state) => state.getActiveSession().messages);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function MessageList() {
           return <div className="message user" key={event.id}><User size={16} /><div><p>{event.content}</p><small><Clock size={11} /> {timeLabel(event.createdAt)}</small></div></div>;
         }
         if (event.type === 'assistant_message') {
-          return <div className="message assistant" key={event.id}><Bot size={16} /><div><p>{event.content}</p><small><Clock size={11} /> {timeLabel(event.createdAt)}</small></div></div>;
+          return <div className="message assistant" key={event.id}><Bot size={16} /><div><p>{event.content}{event.streaming && <Loader2 className="spin inlineIcon" size={12} />}</p><small><Clock size={11} /> {timeLabel(event.createdAt)}</small></div></div>;
         }
         if (event.type === 'approval_request') {
           return <div className="message approval" key={event.id}><ShieldAlert size={16} /><div><p>{event.reason}</p>{event.command && <pre>{event.command}</pre>}<small><Clock size={11} /> {timeLabel(event.createdAt)}</small></div></div>;
