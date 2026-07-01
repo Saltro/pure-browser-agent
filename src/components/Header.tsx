@@ -6,7 +6,7 @@ export function Header({ onBoot, onOpenSettings }: { onBoot: () => void; onOpenS
   const isBooted = useWorkbenchStore((state) => state.isBooted);
   return (
     <header className="header">
-      <div className="brand"><Bot size={20} /> Agent Sandbox Studio</div>
+      <div className="brand"><Bot size={20} /> Pure Browser Agent</div>
       <div className="headerActions">
         <span className={isBooted ? 'status ok' : 'status'}><Cpu size={14} /> {isBooted ? 'WebContainer booted' : 'Not booted'}</span>
         <WorkspaceActions />

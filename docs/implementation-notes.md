@@ -2,7 +2,7 @@
 
 ## Current status
 
-Agent Sandbox Studio is a runnable React MVP focused on Agent Timeline + WebContainer execution.
+Pure Browser Agent is a runnable React MVP focused on Agent Timeline + WebContainer execution.
 
 ## Implemented
 
@@ -91,7 +91,7 @@ Browser smoke test with agent-browser:
 ## Run
 
 ```bash
-cd /home/byteide/agent-sandbox-studio
+cd /home/byteide/pure-browser-agent
 npm run dev
 ```
 

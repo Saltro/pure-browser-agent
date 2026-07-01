@@ -1,8 +1,8 @@
-# Agent Sandbox Studio Proposal
+# Pure Browser Agent Proposal
 
 ## 0. One-line positioning
 
-Agent Sandbox Studio is a **pure-browser Agent Timeline workbench**. Users coordinate context in a visual browser UI while an agent edits files, runs commands, and starts development servers inside a WebContainer-powered virtual Node.js environment.
+Pure Browser Agent is a **pure-browser Agent Timeline workbench**. Users coordinate context in a visual browser UI while an agent edits files, runs commands, and starts development servers inside a WebContainer-powered virtual Node.js environment.
 
 It does not control the host machine shell directly. Instead, it provides a safe, resettable, inspectable browser sandbox that feels like a local development environment.
 
@@ -259,7 +259,7 @@ async function runAgentTurn(input: string) {
 
 ```text
 ┌────────────────────────────────────────────────────────────────────┐
-│ Header: Agent Sandbox Studio                                      │
+│ Header: Pure Browser Agent                                      │
 ├───────────────┬───────────────────────────────┬────────────────────┤
 │ File Explorer │ Agent Timeline / Chat / Plan   │ Context Panel      │
 │               │                               │                    │
@@ -411,7 +411,7 @@ The MVP should provide command preview plus allow/deny confirmation for risky co
 ## 9. Project structure
 
 ```text
-agent-sandbox-studio/
+pure-browser-agent/
   package.json
   index.html
   vite.config.ts

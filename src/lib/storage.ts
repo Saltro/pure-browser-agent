@@ -13,7 +13,7 @@ class WorkbenchDb extends Dexie {
   snapshots!: Table<WorkspaceSnapshot, string>;
 
   constructor() {
-    super('agent-sandbox-studio');
+    super('pure-browser-agent');
     this.version(1).stores({
       snapshots: 'id, name, savedAt'
     });

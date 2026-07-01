@@ -1,6 +1,6 @@
-# Agent Sandbox Studio
+# Pure Browser Agent
 
-Agent Sandbox Studio is a pure-browser React MVP for an agent-centric coding environment powered by WebContainers.
+Pure Browser Agent is a pure-browser React MVP for an agent-centric coding environment powered by WebContainers.
 
 The product focus is **Agent Timeline first, IDE second**: users can see every agent message, tool call, command result, and pinned context item while the agent edits and runs code inside a browser sandbox.
 
