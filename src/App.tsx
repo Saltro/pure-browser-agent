@@ -9,6 +9,7 @@ import { useWorkbenchStore } from './stores/workbenchStore';
 export default function App() {
   const files = useWorkbenchStore((state) => state.files);
   const themeMode = useWorkbenchStore((state) => state.themeMode);
+  const isSidebarCollapsed = useWorkbenchStore((state) => state.isSidebarCollapsed);
   const setBooted = useWorkbenchStore((state) => state.setBooted);
   const setBooting = useWorkbenchStore((state) => state.setBooting);
   const setPreviewUrl = useWorkbenchStore((state) => state.setPreviewUrl);
@@ -58,7 +59,7 @@ export default function App() {
   return (
     <div className="app">
       <Header />
-      <main className="workspace">
+      <main className={isSidebarCollapsed ? 'workspace sidebarCollapsed' : 'workspace'}>
         <section className="conversation">
           <MessageList />
           <ChatBox />

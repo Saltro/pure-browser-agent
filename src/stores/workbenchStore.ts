@@ -49,6 +49,7 @@ type Store = {
   isBooting: boolean;
   isAgentRunning: boolean;
   activeTab: 'files' | 'editor' | 'terminal' | 'preview' | 'settings';
+  isSidebarCollapsed: boolean;
   themeMode: ThemeMode;
   llm: LlmSettings;
   setBooted: (value: boolean) => void;
@@ -56,6 +57,7 @@ type Store = {
   setAgentRunning: (value: boolean) => void;
   setPreviewUrl: (url: string) => void;
   setActiveTab: (tab: Store['activeTab']) => void;
+  setSidebarCollapsed: (value: boolean) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setActivePath: (path: string) => void;
   upsertFile: (path: string, content: string) => void;
@@ -87,6 +89,7 @@ export const useWorkbenchStore = create<Store>()(
       isBooting: false,
       isAgentRunning: false,
       activeTab: 'editor',
+      isSidebarCollapsed: false,
       themeMode: 'system',
       llm: {
         baseUrl: 'https://api.openai.com/v1',
@@ -97,7 +100,8 @@ export const useWorkbenchStore = create<Store>()(
       setBooting: (value) => set({ isBooting: value }),
       setAgentRunning: (value) => set({ isAgentRunning: value }),
       setPreviewUrl: (url) => set({ previewUrl: url }),
-      setActiveTab: (tab) => set({ activeTab: tab }),
+      setActiveTab: (tab) => set({ activeTab: tab, isSidebarCollapsed: false }),
+      setSidebarCollapsed: (value) => set({ isSidebarCollapsed: value }),
       setThemeMode: (mode) => set({ themeMode: mode }),
       setActivePath: (path) => set({ activePath: path }),
       upsertFile: (path, content) =>
@@ -134,6 +138,7 @@ export const useWorkbenchStore = create<Store>()(
         messages: state.messages,
         terminalOutput: state.terminalOutput,
         activeTab: state.activeTab,
+        isSidebarCollapsed: state.isSidebarCollapsed,
         themeMode: state.themeMode,
         llm: state.llm
       })

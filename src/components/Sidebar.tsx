@@ -1,4 +1,4 @@
-import { Code2, Eye, FileCode, Settings, TerminalSquare } from 'lucide-react';
+import { Code2, Eye, FileCode, PanelRightClose, PanelRightOpen, Settings, TerminalSquare } from 'lucide-react';
 import { EditorPane } from './EditorPane';
 import { FileExplorer } from './FileExplorer';
 import { PreviewPane } from './PreviewPane';
@@ -16,25 +16,33 @@ const tabs = [
 
 export function Sidebar() {
   const activeTab = useWorkbenchStore((state) => state.activeTab);
+  const isCollapsed = useWorkbenchStore((state) => state.isSidebarCollapsed);
   const setActiveTab = useWorkbenchStore((state) => state.setActiveTab);
+  const setCollapsed = useWorkbenchStore((state) => state.setSidebarCollapsed);
 
   return (
-    <aside className="sidebar">
+    <aside className={isCollapsed ? 'sidebar collapsed' : 'sidebar'}>
       <nav className="tabBar" aria-label="Workspace tabs">
+        <button className="tab collapseButton" onClick={() => setCollapsed(!isCollapsed)} title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+          {isCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}
+          {!isCollapsed && 'Hide'}
+        </button>
         {tabs.map(({ id, label, icon: Icon }) => (
-          <button key={id} className={activeTab === id ? 'tab active' : 'tab'} onClick={() => setActiveTab(id)}>
+          <button key={id} className={activeTab === id ? 'tab active' : 'tab'} onClick={() => setActiveTab(id)} title={label}>
             <Icon size={15} />
-            {label}
+            {!isCollapsed && label}
           </button>
         ))}
       </nav>
-      <div className="tabBody">
-        {activeTab === 'files' && <FileExplorer />}
-        {activeTab === 'editor' && <EditorPane />}
-        {activeTab === 'terminal' && <TerminalPane />}
-        {activeTab === 'preview' && <PreviewPane />}
-        {activeTab === 'settings' && <SettingsPanel />}
-      </div>
+      {!isCollapsed && (
+        <div className="tabBody">
+          {activeTab === 'files' && <FileExplorer />}
+          {activeTab === 'editor' && <EditorPane />}
+          {activeTab === 'terminal' && <TerminalPane />}
+          {activeTab === 'preview' && <PreviewPane />}
+          {activeTab === 'settings' && <SettingsPanel />}
+        </div>
+      )}
     </aside>
   );
 }
