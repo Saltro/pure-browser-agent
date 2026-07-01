@@ -1,62 +1,70 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { ChatBox } from './components/ChatBox';
-import { ContextPanel } from './components/ContextPanel';
-import { EditorPane } from './components/EditorPane';
-import { FileExplorer } from './components/FileExplorer';
 import { Header } from './components/Header';
-import { PreviewPane } from './components/PreviewPane';
-import { SettingsDialog } from './components/SettingsDialog';
-import { TerminalPane } from './components/TerminalPane';
-import { Timeline } from './components/Timeline';
+import { MessageList } from './components/MessageList';
+import { Sidebar } from './components/Sidebar';
 import { bootWebContainer } from './lib/webcontainer';
 import { useWorkbenchStore } from './stores/workbenchStore';
 
 export default function App() {
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const files = useWorkbenchStore((state) => state.files);
+  const themeMode = useWorkbenchStore((state) => state.themeMode);
   const setBooted = useWorkbenchStore((state) => state.setBooted);
+  const setBooting = useWorkbenchStore((state) => state.setBooting);
   const setPreviewUrl = useWorkbenchStore((state) => state.setPreviewUrl);
-  const addTimeline = useWorkbenchStore((state) => state.addTimeline);
-  const updateToolStatus = useWorkbenchStore((state) => state.updateToolStatus);
+  const addMessage = useWorkbenchStore((state) => state.addMessage);
   const appendTerminal = useWorkbenchStore((state) => state.appendTerminal);
 
-  async function boot() {
-    const eventId = addTimeline({ type: 'tool_call', toolName: 'boot_webcontainer', input: { files: files.length }, status: 'running' });
-    try {
-      const wc = await bootWebContainer(files);
-      wc.on('server-ready', (_port, url) => {
-        setPreviewUrl(url);
-        addTimeline({ type: 'tool_result', toolName: 'server-ready', output: { url } });
-      });
-      setBooted(true);
-      updateToolStatus(eventId, 'success');
-      appendTerminal('WebContainer booted. Try `npm install`, then `npm run dev`.\n');
-      addTimeline({ type: 'assistant_message', content: 'WebContainer booted and files mounted.' });
-    } catch (error) {
-      updateToolStatus(eventId, 'error');
-      addTimeline({ type: 'assistant_message', content: error instanceof Error ? error.message : String(error) });
+  useEffect(() => {
+    const root = document.documentElement;
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+      const resolved = themeMode === 'system' ? (systemDark.matches ? 'dark' : 'light') : themeMode;
+      root.dataset.theme = resolved;
+    };
+    applyTheme();
+    systemDark.addEventListener('change', applyTheme);
+    return () => systemDark.removeEventListener('change', applyTheme);
+  }, [themeMode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function boot() {
+      setBooting(true);
+      const eventId = addMessage({ type: 'tool_call', toolName: 'boot_webcontainer', input: { files: files.length }, status: 'running' });
+      try {
+        const wc = await bootWebContainer(files);
+        if (cancelled) return;
+        wc.on('server-ready', (_port, url) => {
+          setPreviewUrl(url);
+          addMessage({ type: 'tool_result', toolName: 'server-ready', output: { url } });
+        });
+        setBooted(true);
+        appendTerminal('WebContainer sandbox connected. Try `npm install`, then `npm run dev`.\n');
+        useWorkbenchStore.getState().updateToolStatus(eventId, 'success');
+      } catch (error) {
+        useWorkbenchStore.getState().updateToolStatus(eventId, 'error');
+        addMessage({ type: 'assistant_message', content: error instanceof Error ? error.message : String(error) });
+      } finally {
+        setBooting(false);
+      }
     }
-  }
+    boot();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="app">
-      <Header onBoot={boot} onOpenSettings={() => setSettingsOpen(true)} />
+      <Header />
       <main className="workspace">
-        <FileExplorer />
-        <div className="centerStack">
-          <div className="topGrid">
-            <Timeline />
-            <EditorPane />
-          </div>
+        <section className="conversation">
+          <MessageList />
           <ChatBox />
-          <div className="bottomGrid">
-            <TerminalPane />
-            <PreviewPane />
-          </div>
-        </div>
-        <ContextPanel />
+        </section>
+        <Sidebar />
       </main>
-      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

@@ -13,7 +13,7 @@ export function ChatBox() {
   const [input, setInput] = useState('');
   const running = useWorkbenchStore((state) => state.isAgentRunning);
   const setRunning = useWorkbenchStore((state) => state.setAgentRunning);
-  const addTimeline = useWorkbenchStore((state) => state.addTimeline);
+  const addMessage = useWorkbenchStore((state) => state.addMessage);
 
   async function submit(event?: FormEvent, override?: string) {
     event?.preventDefault();
@@ -24,14 +24,14 @@ export function ChatBox() {
     try {
       await runAgentTurn(value);
     } catch (error) {
-      addTimeline({ type: 'assistant_message', content: error instanceof Error ? error.message : String(error) });
+      addMessage({ type: 'assistant_message', content: error instanceof Error ? error.message : String(error) });
     } finally {
       setRunning(false);
     }
   }
 
   return (
-    <div className="chatArea">
+    <div className="composer">
       <div className="promptChips">
         {examples.map((example) => (
           <button key={example} type="button" className="chip" onClick={() => submit(undefined, example)} disabled={running}>
@@ -40,7 +40,7 @@ export function ChatBox() {
         ))}
       </div>
       <form className="chatBox" onSubmit={submit}>
-        <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask the agent to edit files, run npm install, start dev server..." />
+        <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask the agent to edit files, run commands, or explain the workspace..." />
         <button disabled={running}>{running ? 'Running...' : <><Send size={15} /> Send</>}</button>
       </form>
     </div>

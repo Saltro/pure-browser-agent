@@ -2,34 +2,39 @@
 
 Pure Browser Agent is a pure-browser React MVP for an agent-centric coding environment powered by WebContainers.
 
-The product focus is **Agent Timeline first, IDE second**: users can see every agent message, tool call, command result, and pinned context item while the agent edits and runs code inside a browser sandbox.
+The product focus is simple: a main message list plus a right sidebar for the virtual workspace. Users can see agent messages, tool calls, command results, files, terminal output, preview, and model settings without installing a local daemon or running a backend.
 
 ## Features
 
 - React + Vite + TypeScript app shell
 - WebContainer boot and virtual filesystem mount
+- Automatic WebContainer connection on page load
 - Starter Vite/React workspace inside WebContainer
-- File explorer
+- Main message list for user messages, assistant messages, tool calls, and tool results
+- Right sidebar tabs:
+  - editor
+  - files
+  - terminal
+  - preview
+  - settings
 - Monaco editor
-- Agent Timeline
-- Context panel with pinning
 - Terminal command runner inside WebContainer
 - Preview iframe via WebContainer `server-ready`
-- OpenAI-compatible settings page: `baseURL / model / API key`
-- IndexedDB workspace save/load via Dexie
+- OpenAI-compatible settings: `baseURL / model / API key`
+- Automatic local persistence with Zustand persist
+- Light, dark, and system theme modes
 - Basic command approval for risky command patterns
 - Basic agent loop with tools:
   - `list_files`
   - `read_file`
   - `write_file`
   - `run_command`
-  - `pin_context`
 
 ## Run
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Open the Vite URL in a browser that supports WebContainers.
@@ -41,7 +46,7 @@ WebContainers require cross-origin isolation, so `vite.config.ts` sets:
 
 ## Demo flow
 
-1. Click **Boot WebContainer**.
+1. Open the app. The WebContainer sandbox connects automatically.
 2. Open **Settings** and configure an OpenAI-compatible endpoint.
 3. Try this prompt:
 
@@ -49,10 +54,10 @@ WebContainers require cross-origin isolation, so `vite.config.ts` sets:
 Turn the starter page into a polished todo app, then run npm install and npm run dev.
 ```
 
-4. Watch the Agent Timeline, terminal output, file changes, context panel, and preview iframe.
+4. Watch the message list, terminal output, file changes, and preview iframe.
 
 ## Notes
 
-This project intentionally does not implement Workflow DAGs yet. The first version focuses on making the agent execution timeline visible, inspectable, and useful.
+This project intentionally does not implement Workflow DAGs yet. The first version focuses on making browser-only agent execution visible, inspectable, and useful.
 
-The LLM key is stored in browser localStorage for local demo convenience. Do not deploy this directly as a public multi-user app with user keys.
+The LLM key is stored locally in browser storage for demo convenience. Do not deploy this directly as a public multi-user app with user keys.

@@ -1,17 +1,16 @@
-import { Bot, Cpu, Settings } from 'lucide-react';
+import { Bot, Cpu } from 'lucide-react';
 import { useWorkbenchStore } from '../stores/workbenchStore';
-import { WorkspaceActions } from './WorkspaceActions';
+import { ThemeToggle } from './ThemeToggle';
 
-export function Header({ onBoot, onOpenSettings }: { onBoot: () => void; onOpenSettings: () => void }) {
+export function Header() {
   const isBooted = useWorkbenchStore((state) => state.isBooted);
+  const isBooting = useWorkbenchStore((state) => state.isBooting);
   return (
     <header className="header">
       <div className="brand"><Bot size={20} /> Pure Browser Agent</div>
       <div className="headerActions">
-        <span className={isBooted ? 'status ok' : 'status'}><Cpu size={14} /> {isBooted ? 'WebContainer booted' : 'Not booted'}</span>
-        <WorkspaceActions />
-        <button onClick={onBoot}>{isBooted ? 'Remount files' : 'Boot WebContainer'}</button>
-        <button className="ghost" onClick={onOpenSettings}><Settings size={16} /> Settings</button>
+        <span className={isBooted ? 'status ok' : 'status'}><Cpu size={14} /> {isBooted ? 'Sandbox ready' : isBooting ? 'Connecting sandbox' : 'Sandbox offline'}</span>
+        <ThemeToggle />
       </div>
     </header>
   );

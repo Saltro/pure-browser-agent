@@ -3,15 +3,7 @@ export type FileNode = {
   content: string;
 };
 
-export type ContextItem = {
-  id: string;
-  type: 'file' | 'terminal' | 'note' | 'error';
-  title: string;
-  content: string;
-  createdAt: number;
-};
-
-export type TimelineEvent =
+export type AppMessage =
   | { id: string; type: 'user_message'; content: string; createdAt: number }
   | { id: string; type: 'assistant_message'; content: string; createdAt: number }
   | {
@@ -30,6 +22,8 @@ export type LlmSettings = {
   model: string;
   apiKey: string;
 };
+
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export type ToolCall = {
   id: string;

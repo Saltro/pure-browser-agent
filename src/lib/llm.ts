@@ -43,14 +43,6 @@ export const tools = [
       description: 'Run a command inside the WebContainer virtual shell. Use for npm install, npm run dev, npm test, node scripts, etc.',
       parameters: { type: 'object', properties: { command: { type: 'string' } }, required: ['command'], additionalProperties: false }
     }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'pin_context',
-      description: 'Pin useful content to the context panel.',
-      parameters: { type: 'object', properties: { title: { type: 'string' }, content: { type: 'string' } }, required: ['title', 'content'], additionalProperties: false }
-    }
   }
 ];
 

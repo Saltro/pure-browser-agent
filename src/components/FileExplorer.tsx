@@ -6,6 +6,7 @@ export function FileExplorer() {
   const files = useWorkbenchStore((state) => state.files);
   const activePath = useWorkbenchStore((state) => state.activePath);
   const setActivePath = useWorkbenchStore((state) => state.setActivePath);
+  const setActiveTab = useWorkbenchStore((state) => state.setActiveTab);
   const upsertFile = useWorkbenchStore((state) => state.upsertFile);
   const deleteFile = useWorkbenchStore((state) => state.deleteFile);
   const resetWorkspace = useWorkbenchStore((state) => state.resetWorkspace);
@@ -15,6 +16,7 @@ export function FileExplorer() {
     if (!path) return;
     upsertFile(path, '');
     setActivePath(path);
+    setActiveTab('editor');
   }
 
   async function removeFile(path: string) {
@@ -24,7 +26,7 @@ export function FileExplorer() {
   }
 
   return (
-    <aside className="panel filePanel">
+    <section className="panel filePanel">
       <div className="panelTitle">
         Files
         <span className="rowActions">
@@ -35,11 +37,11 @@ export function FileExplorer() {
       <div className="fileList">
         {files.map((file) => (
           <div key={file.path} className={file.path === activePath ? 'fileRow active' : 'fileRow'}>
-            <button className="file" onClick={() => setActivePath(file.path)}><FileCode size={15} /> {file.path}</button>
+            <button className="file" onClick={() => { setActivePath(file.path); setActiveTab('editor'); }}><FileCode size={15} /> {file.path}</button>
             <button className="deleteFile" title="Delete" onClick={() => removeFile(file.path)}><Trash2 size={13} /></button>
           </div>
         ))}
       </div>
-    </aside>
+    </section>
   );
 }

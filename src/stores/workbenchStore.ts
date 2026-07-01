@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { ContextItem, FileNode, LlmSettings, TimelineEvent } from '../types/workbench';
+import { persist } from 'zustand/middleware';
+import type { AppMessage, FileNode, LlmSettings, ThemeMode } from '../types/workbench';
 
 const now = () => Date.now();
 const id = () => crypto.randomUUID();
@@ -23,7 +24,7 @@ const starterFiles: FileNode[] = [
   },
   {
     path: 'src/main.jsx',
-    content: "import React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport './style.css';\n\nfunction App() {\n  return <main><h1>Hello WebContainer Agent</h1><p>Edit me with the agent.</p></main>;\n}\n\ncreateRoot(document.getElementById('root')).render(<App />);\n"
+    content: "import React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport './style.css';\n\nfunction App() {\n  return <main><h1>Hello Pure Browser Agent</h1><p>Edit me with the agent.</p></main>;\n}\n\ncreateRoot(document.getElementById('root')).render(<App />);\n"
   },
   {
     path: 'src/style.css',
@@ -31,85 +32,111 @@ const starterFiles: FileNode[] = [
   }
 ];
 
-type TimelineDraft =
-  | Omit<Extract<TimelineEvent, { type: 'user_message' }>, 'id' | 'createdAt'>
-  | Omit<Extract<TimelineEvent, { type: 'assistant_message' }>, 'id' | 'createdAt'>
-  | Omit<Extract<TimelineEvent, { type: 'tool_call' }>, 'id' | 'createdAt'>
-  | Omit<Extract<TimelineEvent, { type: 'tool_result' }>, 'id' | 'createdAt'>
-  | Omit<Extract<TimelineEvent, { type: 'approval_request' }>, 'id' | 'createdAt'>;
+type MessageDraft =
+  | Omit<Extract<AppMessage, { type: 'user_message' }>, 'id' | 'createdAt'>
+  | Omit<Extract<AppMessage, { type: 'assistant_message' }>, 'id' | 'createdAt'>
+  | Omit<Extract<AppMessage, { type: 'tool_call' }>, 'id' | 'createdAt'>
+  | Omit<Extract<AppMessage, { type: 'tool_result' }>, 'id' | 'createdAt'>
+  | Omit<Extract<AppMessage, { type: 'approval_request' }>, 'id' | 'createdAt'>;
 
 type Store = {
   files: FileNode[];
   activePath: string;
-  contextItems: ContextItem[];
-  timeline: TimelineEvent[];
+  messages: AppMessage[];
   terminalOutput: string;
   previewUrl: string;
   isBooted: boolean;
+  isBooting: boolean;
   isAgentRunning: boolean;
+  activeTab: 'files' | 'editor' | 'terminal' | 'preview' | 'settings';
+  themeMode: ThemeMode;
   llm: LlmSettings;
   setBooted: (value: boolean) => void;
+  setBooting: (value: boolean) => void;
   setAgentRunning: (value: boolean) => void;
   setPreviewUrl: (url: string) => void;
+  setActiveTab: (tab: Store['activeTab']) => void;
+  setThemeMode: (mode: ThemeMode) => void;
   setActivePath: (path: string) => void;
   upsertFile: (path: string, content: string) => void;
   deleteFile: (path: string) => void;
   resetWorkspace: () => void;
-  loadSnapshot: (snapshot: { files: FileNode[]; contextItems: ContextItem[] }) => void;
   appendTerminal: (chunk: string) => void;
   clearTerminal: () => void;
-  addContext: (item: Omit<ContextItem, 'id' | 'createdAt'>) => void;
-  removeContext: (contextId: string) => void;
-  addTimeline: (event: TimelineDraft) => string;
+  addMessage: (event: MessageDraft) => string;
   updateToolStatus: (eventId: string, status: 'pending' | 'running' | 'success' | 'error') => void;
   setLlm: (settings: LlmSettings) => void;
 };
 
-export const useWorkbenchStore = create<Store>((set) => ({
-  files: starterFiles,
-  activePath: 'src/main.jsx',
-  contextItems: [],
-  timeline: [
-    { id: id(), type: 'assistant_message', content: 'Workspace ready. Boot WebContainer, then ask me to edit or run the demo app.', createdAt: now() }
-  ],
-  terminalOutput: '',
-  previewUrl: '',
-  isBooted: false,
-  isAgentRunning: false,
-  llm: {
-    baseUrl: localStorage.getItem('llm.baseUrl') || 'https://api.openai.com/v1',
-    model: localStorage.getItem('llm.model') || 'gpt-4o-mini',
-    apiKey: localStorage.getItem('llm.apiKey') || ''
-  },
-  setBooted: (value) => set({ isBooted: value }),
-  setAgentRunning: (value) => set({ isAgentRunning: value }),
-  setPreviewUrl: (url) => set({ previewUrl: url }),
-  setActivePath: (path) => set({ activePath: path }),
-  upsertFile: (path, content) =>
-    set((state) => {
-      const exists = state.files.some((file) => file.path === path);
-      return { files: exists ? state.files.map((file) => (file.path === path ? { path, content } : file)) : [...state.files, { path, content }] };
+export const useWorkbenchStore = create<Store>()(
+  persist(
+    (set) => ({
+      files: starterFiles,
+      activePath: 'src/main.jsx',
+      messages: [
+        {
+          id: id(),
+          type: 'assistant_message',
+          content: 'Welcome to Pure Browser Agent. Ask me to inspect, edit, or run the sandbox project.',
+          createdAt: now()
+        }
+      ],
+      terminalOutput: '',
+      previewUrl: '',
+      isBooted: false,
+      isBooting: false,
+      isAgentRunning: false,
+      activeTab: 'editor',
+      themeMode: 'system',
+      llm: {
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-4o-mini',
+        apiKey: ''
+      },
+      setBooted: (value) => set({ isBooted: value }),
+      setBooting: (value) => set({ isBooting: value }),
+      setAgentRunning: (value) => set({ isAgentRunning: value }),
+      setPreviewUrl: (url) => set({ previewUrl: url }),
+      setActiveTab: (tab) => set({ activeTab: tab }),
+      setThemeMode: (mode) => set({ themeMode: mode }),
+      setActivePath: (path) => set({ activePath: path }),
+      upsertFile: (path, content) =>
+        set((state) => {
+          const exists = state.files.some((file) => file.path === path);
+          return {
+            files: exists ? state.files.map((file) => (file.path === path ? { path, content } : file)) : [...state.files, { path, content }]
+          };
+        }),
+      deleteFile: (path) =>
+        set((state) => {
+          const files = state.files.filter((file) => file.path !== path);
+          return { files, activePath: state.activePath === path ? files[0]?.path || '' : state.activePath };
+        }),
+      resetWorkspace: () => set({ files: starterFiles, activePath: 'src/main.jsx', terminalOutput: '', previewUrl: '' }),
+      appendTerminal: (chunk) => set((state) => ({ terminalOutput: state.terminalOutput + chunk })),
+      clearTerminal: () => set({ terminalOutput: '' }),
+      addMessage: (event) => {
+        const eventId = id();
+        set((state) => ({ messages: [...state.messages, { ...event, id: eventId, createdAt: now() } as AppMessage] }));
+        return eventId;
+      },
+      updateToolStatus: (eventId, status) =>
+        set((state) => ({
+          messages: state.messages.map((event) => (event.id === eventId && event.type === 'tool_call' ? { ...event, status } : event))
+        })),
+      setLlm: (settings) => set({ llm: settings })
     }),
-  deleteFile: (path) => set((state) => ({ files: state.files.filter((file) => file.path !== path), activePath: state.activePath === path ? state.files[0]?.path || '' : state.activePath })),
-  resetWorkspace: () => set({ files: starterFiles, activePath: 'src/main.jsx', contextItems: [], terminalOutput: '', previewUrl: '' }),
-  loadSnapshot: (snapshot) => set({ files: snapshot.files, contextItems: snapshot.contextItems, activePath: snapshot.files[0]?.path || '', terminalOutput: '', previewUrl: '' }),
-  appendTerminal: (chunk) => set((state) => ({ terminalOutput: state.terminalOutput + chunk })),
-  clearTerminal: () => set({ terminalOutput: '' }),
-  addContext: (item) => set((state) => ({ contextItems: [{ ...item, id: id(), createdAt: now() }, ...state.contextItems] })),
-  removeContext: (contextId) => set((state) => ({ contextItems: state.contextItems.filter((item) => item.id !== contextId) })),
-  addTimeline: (event) => {
-    const eventId = id();
-    set((state) => ({ timeline: [...state.timeline, { ...event, id: eventId, createdAt: now() } as TimelineEvent] }));
-    return eventId;
-  },
-  updateToolStatus: (eventId, status) =>
-    set((state) => ({
-      timeline: state.timeline.map((event) => (event.id === eventId && event.type === 'tool_call' ? { ...event, status } : event))
-    })),
-  setLlm: (settings) => {
-    localStorage.setItem('llm.baseUrl', settings.baseUrl);
-    localStorage.setItem('llm.model', settings.model);
-    localStorage.setItem('llm.apiKey', settings.apiKey);
-    set({ llm: settings });
-  }
-}));
+    {
+      name: 'pure-browser-agent-state',
+      partialize: (state) => ({
+        files: state.files,
+        activePath: state.activePath,
+        messages: state.messages,
+        terminalOutput: state.terminalOutput,
+        activeTab: state.activeTab,
+        themeMode: state.themeMode,
+        llm: state.llm
+      })
+    }
+  )
+);
