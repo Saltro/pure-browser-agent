@@ -11,7 +11,7 @@ const starterFiles: FileNode[] = [
     content: JSON.stringify(
       {
         scripts: { dev: 'vite --host 0.0.0.0', build: 'vite build' },
-        dependencies: { '@vitejs/plugin-react': 'latest', vite: 'latest', react: 'latest', 'react-dom': 'latest' },
+        dependencies: { '@vitejs/plugin-react': '^6.0.3', vite: '^8.1.2', react: '^19.2.7', 'react-dom': '^19.2.7' },
         devDependencies: {}
       },
       null,
@@ -50,6 +50,7 @@ type Store = {
   isAgentRunning: boolean;
   activeTab: 'files' | 'editor' | 'terminal' | 'preview' | 'settings';
   isSidebarCollapsed: boolean;
+  sidebarWidth: number;
   themeMode: ThemeMode;
   llm: LlmSettings;
   setBooted: (value: boolean) => void;
@@ -58,6 +59,7 @@ type Store = {
   setPreviewUrl: (url: string) => void;
   setActiveTab: (tab: Store['activeTab']) => void;
   setSidebarCollapsed: (value: boolean) => void;
+  setSidebarWidth: (value: number) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setActivePath: (path: string) => void;
   upsertFile: (path: string, content: string) => void;
@@ -90,6 +92,7 @@ export const useWorkbenchStore = create<Store>()(
       isAgentRunning: false,
       activeTab: 'editor',
       isSidebarCollapsed: false,
+      sidebarWidth: 520,
       themeMode: 'system',
       llm: {
         baseUrl: 'https://api.openai.com/v1',
@@ -102,6 +105,7 @@ export const useWorkbenchStore = create<Store>()(
       setPreviewUrl: (url) => set({ previewUrl: url }),
       setActiveTab: (tab) => set({ activeTab: tab, isSidebarCollapsed: false }),
       setSidebarCollapsed: (value) => set({ isSidebarCollapsed: value }),
+      setSidebarWidth: (value) => set({ sidebarWidth: Math.min(720, Math.max(320, value)) }),
       setThemeMode: (mode) => set({ themeMode: mode }),
       setActivePath: (path) => set({ activePath: path }),
       upsertFile: (path, content) =>
@@ -139,6 +143,7 @@ export const useWorkbenchStore = create<Store>()(
         terminalOutput: state.terminalOutput,
         activeTab: state.activeTab,
         isSidebarCollapsed: state.isSidebarCollapsed,
+        sidebarWidth: state.sidebarWidth,
         themeMode: state.themeMode,
         llm: state.llm
       })
