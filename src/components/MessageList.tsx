@@ -1,6 +1,7 @@
 import { Bot, CheckCircle2, ChevronRight, CircleAlert, Clock, Loader2, ShieldAlert, User, Wrench } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useWorkbenchStore } from '../stores/workbenchStore';
+import { Badge } from './ui/badge';
 
 function timeLabel(ts: number) {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -31,7 +32,7 @@ export function MessageList() {
             <div className="message tool" key={event.id}>
               {event.status === 'running' ? <Loader2 className="spin" size={16} /> : event.status === 'success' ? <CheckCircle2 size={16} /> : event.status === 'error' ? <CircleAlert size={16} /> : <Wrench size={16} />}
               <details open={event.status === 'running' || event.status === 'error'}>
-                <summary>{event.toolName} <span className={`badge ${event.status}`}>{event.status}</span></summary>
+                <summary>{event.toolName} <Badge className={event.status}>{event.status}</Badge></summary>
                 <pre>{JSON.stringify(event.input, null, 2)}</pre>
                 <small><Clock size={11} /> {timeLabel(event.createdAt)}</small>
               </details>

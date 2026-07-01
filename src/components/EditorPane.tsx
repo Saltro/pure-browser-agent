@@ -2,6 +2,7 @@ import Editor from '@monaco-editor/react';
 import { Save } from 'lucide-react';
 import { isWebContainerBooted, syncFilesToContainer, writeContainerFile } from '../lib/webcontainer';
 import { useWorkbenchStore } from '../stores/workbenchStore';
+import { Button } from './ui/button';
 
 function languageFor(path: string) {
   if (path.endsWith('.json')) return 'json';
@@ -37,8 +38,8 @@ export function EditorPane() {
       <div className="panelTitle">
         <span>{file.path}</span>
         <span className="rowActions">
-          <button className="ghost small" onClick={syncCurrentFile}><Save size={14} /> Sync file</button>
-          <button className="ghost small" onClick={syncAllFiles}>Sync all</button>
+          <Button variant="outline" size="sm" className="small" onClick={syncCurrentFile}><Save size={14} /> Sync file</Button>
+          <Button variant="outline" size="sm" className="small" onClick={syncAllFiles}>Sync all</Button>
         </span>
       </div>
       <Editor

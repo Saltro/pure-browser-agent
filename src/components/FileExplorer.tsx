@@ -1,6 +1,7 @@
 import { FileCode, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { deleteContainerFile, isWebContainerBooted } from '../lib/webcontainer';
 import { useWorkbenchStore } from '../stores/workbenchStore';
+import { Button } from './ui/button';
 
 export function FileExplorer() {
   const files = useWorkbenchStore((state) => state.files);
@@ -30,15 +31,15 @@ export function FileExplorer() {
       <div className="panelTitle">
         Files
         <span className="rowActions">
-          <button className="iconBtn" title="Reset starter workspace" onClick={() => confirm('Reset starter files?') && resetWorkspace()}><RotateCcw size={14} /></button>
-          <button className="iconBtn" title="New file" onClick={createFile}><Plus size={14} /></button>
+          <Button variant="outline" size="icon" className="iconBtn" title="Reset starter workspace" onClick={() => confirm('Reset starter files?') && resetWorkspace()}><RotateCcw size={14} /></Button>
+          <Button variant="outline" size="icon" className="iconBtn" title="New file" onClick={createFile}><Plus size={14} /></Button>
         </span>
       </div>
       <div className="fileList">
         {files.map((file) => (
           <div key={file.path} className={file.path === activePath ? 'fileRow active' : 'fileRow'}>
-            <button className="file" onClick={() => { setActivePath(file.path); setActiveTab('editor'); }}><FileCode size={15} /> {file.path}</button>
-            <button className="deleteFile" title="Delete" onClick={() => removeFile(file.path)}><Trash2 size={13} /></button>
+            <Button variant="ghost" className="file" onClick={() => { setActivePath(file.path); setActiveTab('editor'); }}><FileCode size={15} /> {file.path}</Button>
+            <Button variant="ghost" size="icon" className="deleteFile" title="Delete" onClick={() => removeFile(file.path)}><Trash2 size={13} /></Button>
           </div>
         ))}
       </div>

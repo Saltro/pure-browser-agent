@@ -2,6 +2,8 @@ import { Play, Trash2 } from 'lucide-react';
 import { FormEvent, useRef, useState } from 'react';
 import { runContainerCommand, syncFilesToContainer } from '../lib/webcontainer';
 import { useWorkbenchStore } from '../stores/workbenchStore';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 export function TerminalPane() {
   const [command, setCommand] = useState('npm install');
@@ -42,11 +44,11 @@ export function TerminalPane() {
 
   return (
     <section className="panel terminalPane">
-      <div className="panelTitle">Terminal <button className="iconBtn" onClick={clearTerminal}><Trash2 size={14} /></button></div>
+      <div className="panelTitle">Terminal <Button variant="outline" size="icon" className="iconBtn" onClick={clearTerminal}><Trash2 size={14} /></Button></div>
       <pre ref={outputRef} className="terminalOutput">{terminalOutput || 'The WebContainer sandbox connects automatically. Run commands here.'}</pre>
       <form className="terminalInput" onSubmit={submit}>
-        <input value={command} onChange={(event) => setCommand(event.target.value)} />
-        <button disabled={running}><Play size={14} /> {running ? 'Running' : 'Run'}</button>
+        <Input value={command} onChange={(event) => setCommand(event.target.value)} />
+        <Button disabled={running}><Play size={14} /> {running ? 'Running' : 'Run'}</Button>
       </form>
     </section>
   );

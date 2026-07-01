@@ -1,5 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { useWorkbenchStore } from '../stores/workbenchStore';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 export function SettingsPanel() {
   const llm = useWorkbenchStore((state) => state.llm);
@@ -19,10 +21,10 @@ export function SettingsPanel() {
         <h2>Model settings</h2>
         <p>Configure any OpenAI-compatible endpoint. Settings are stored locally in this browser.</p>
       </div>
-      <label>Base URL<input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} /></label>
-      <label>Model<input value={model} onChange={(event) => setModel(event.target.value)} /></label>
-      <label>API Key<input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} /></label>
-      <button>Save settings</button>
+      <label>Base URL<Input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} /></label>
+      <label>Model<Input value={model} onChange={(event) => setModel(event.target.value)} /></label>
+      <label>API Key<Input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} /></label>
+      <Button>Save settings</Button>
     </form>
   );
 }

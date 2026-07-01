@@ -12,11 +12,14 @@
     "@monaco-editor/react": "latest",
     "@vitejs/plugin-react": "latest",
     "@webcontainer/api": "latest",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "lucide-react": "latest",
     "monaco-editor": "latest",
-    "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "tailwind-merge": "^3.6.0",
+    "vite": "latest",
     "zustand": "latest"
   },
   "devDependencies": {

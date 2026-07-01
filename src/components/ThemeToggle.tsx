@@ -15,7 +15,7 @@ export function ThemeToggle() {
   return (
     <div className="themeToggle" aria-label="Theme">
       {modes.map(({ mode, label, icon: Icon }) => (
-        <button key={mode} className={themeMode === mode ? 'segmented active' : 'segmented'} onClick={() => setThemeMode(mode)} title={label}>
+        <button key={mode} className={themeMode === mode ? 'btn btn-ghost segmented active' : 'btn btn-ghost segmented'} onClick={() => setThemeMode(mode)} title={label}>
           <Icon size={14} />
           <span>{label}</span>
         </button>

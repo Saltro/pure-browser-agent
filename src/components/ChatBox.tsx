@@ -1,4 +1,6 @@
 import { Send, Sparkles } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { FormEvent, useState } from 'react';
 import { runAgentTurn } from '../lib/agent';
 import { useWorkbenchStore } from '../stores/workbenchStore';
@@ -34,14 +36,14 @@ export function ChatBox() {
     <div className="composer">
       <div className="promptChips">
         {examples.map((example) => (
-          <button key={example} type="button" className="chip" onClick={() => submit(undefined, example)} disabled={running}>
+          <Button key={example} type="button" variant="outline" size="sm" className="chip" onClick={() => submit(undefined, example)} disabled={running}>
             <Sparkles size={13} /> {example}
-          </button>
+          </Button>
         ))}
       </div>
       <form className="chatBox" onSubmit={submit}>
-        <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask the agent to edit files, run commands, or explain the workspace..." />
-        <button disabled={running}>{running ? 'Running...' : <><Send size={15} /> Send</>}</button>
+        <Input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask the agent to edit files, run commands, or explain the workspace..." />
+        <Button disabled={running}>{running ? 'Running...' : <><Send size={15} /> Send</>}</Button>
       </form>
     </div>
   );

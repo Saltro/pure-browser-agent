@@ -5,6 +5,7 @@ import { PreviewPane } from './PreviewPane';
 import { SettingsPanel } from './SettingsPanel';
 import { TerminalPane } from './TerminalPane';
 import { useWorkbenchStore } from '../stores/workbenchStore';
+import { Button } from './ui/button';
 
 const tabs = [
   { id: 'editor' as const, label: 'Editor', icon: Code2 },
@@ -23,15 +24,15 @@ export function Sidebar() {
   return (
     <aside className={isCollapsed ? 'sidebar collapsed' : 'sidebar'}>
       <nav className="tabBar" aria-label="Workspace tabs">
-        <button className="tab collapseButton" onClick={() => setCollapsed(!isCollapsed)} title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+        <Button variant="ghost" size={isCollapsed ? 'icon' : 'sm'} className="tab collapseButton" onClick={() => setCollapsed(!isCollapsed)} title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           {isCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}
           {!isCollapsed && 'Hide'}
-        </button>
+        </Button>
         {tabs.map(({ id, label, icon: Icon }) => (
-          <button key={id} className={activeTab === id ? 'tab active' : 'tab'} onClick={() => setActiveTab(id)} title={label}>
+          <Button key={id} variant="ghost" size={isCollapsed ? 'icon' : 'sm'} className={activeTab === id ? 'tab active' : 'tab'} onClick={() => setActiveTab(id)} title={label}>
             <Icon size={15} />
             {!isCollapsed && label}
-          </button>
+          </Button>
         ))}
       </nav>
       {!isCollapsed && (
