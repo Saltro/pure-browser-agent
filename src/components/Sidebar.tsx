@@ -1,19 +1,15 @@
-import { Code2, Eye, FileCode, PanelRightClose, PanelRightOpen, Settings, TerminalSquare } from 'lucide-react';
+import { Eye, FolderOpen, PanelRightClose, PanelRightOpen, TerminalSquare } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useWorkbenchStore } from '../stores/workbenchStore';
-import EditorPane from './EditorPane';
-import { FileExplorer } from './FileExplorer';
 import { PreviewPane } from './PreviewPane';
-import { SettingsPanel } from './SettingsPanel';
 import { TerminalPane } from './TerminalPane';
+import { WorkspacePane } from './WorkspacePane';
 import { Button } from './ui/button';
 
 const tabs = [
-  { id: 'editor' as const, label: 'Editor', icon: Code2 },
-  { id: 'files' as const, label: 'Files', icon: FileCode },
+  { id: 'workspace' as const, label: 'Workspace', icon: FolderOpen },
   { id: 'terminal' as const, label: 'Terminal', icon: TerminalSquare },
-  { id: 'preview' as const, label: 'Preview', icon: Eye },
-  { id: 'settings' as const, label: 'Settings', icon: Settings }
+  { id: 'preview' as const, label: 'Preview', icon: Eye }
 ];
 
 export function Sidebar() {
@@ -69,11 +65,9 @@ export function Sidebar() {
       </nav>
       {!isCollapsed && (
         <div className="tabBody">
-          {activeTab === 'files' && <FileExplorer />}
-          {activeTab === 'editor' && <EditorPane />}
+          {activeTab === 'workspace' && <WorkspacePane />}
           {activeTab === 'terminal' && <TerminalPane />}
           {activeTab === 'preview' && <PreviewPane />}
-          {activeTab === 'settings' && <SettingsPanel />}
         </div>
       )}
     </aside>

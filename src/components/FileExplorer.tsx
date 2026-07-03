@@ -24,7 +24,7 @@ export function FileExplorer() {
     upsertFile(path, '');
     markDirty(path);
     setActivePath(path);
-    setActiveTab('editor');
+    setActiveTab('workspace');
     setCreating(false);
     setNewPath('');
   }
@@ -72,7 +72,7 @@ export function FileExplorer() {
       <div className="fileList">
         {files.map((file) => (
           <div key={file.path} className={file.path === activePath ? 'fileRow active' : 'fileRow'}>
-            <Button variant="ghost" className="file" onClick={() => { setActivePath(file.path); setActiveTab('editor'); }}><FileCode size={15} /> {file.path}</Button>
+            <Button variant="ghost" className="file" onClick={() => { setActivePath(file.path); setActiveTab('workspace'); }}><FileCode size={15} /> {file.path}</Button>
             {confirmingDelete === file.path ? (
               <span className="deleteConfirm">
                 <Button variant="destructive" size="sm" className="small" onClick={() => handleDelete(file.path)}>Confirm</Button>

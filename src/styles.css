@@ -24,8 +24,8 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
-  --code-bg: #0f172a;
-  --code-text: #d1fae5;
+  --code-bg: #f1f5f9;
+  --code-text: #1e293b;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -62,7 +62,7 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
   --code-bg: #020617;
-  --code-text: #d1fae5;
+  --code-text: #e2e8f0;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -225,8 +225,16 @@ small { color: var(--muted-foreground); display: inline-flex; align-items: cente
 .iconBtn { height: 2rem; width: 2rem; padding: 0; }
 .emptyState { display: grid; place-items: center; color: var(--muted-foreground); }
 
+.workspacePane { display: flex; height: 100%; min-height: 0; overflow: hidden; }
+.workspaceFiles { flex: 0 0 var(--files-width, 220px); width: var(--files-width, 220px); min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+.workspaceSplitter { flex: 0 0 4px; cursor: col-resize; background: transparent; transition: background .15s; }
+.workspaceSplitter:hover { background: color-mix(in oklch, var(--ring) 28%, transparent); }
+.workspaceEditor { flex: 1; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+
 .filePanel, .editorPane, .terminalPane, .previewPane { display: flex; flex-direction: column; }
-.fileList { overflow: auto; padding: .5rem; }
+.filePanel { flex: 1; min-height: 0; }
+.fileList { flex: 1; min-height: 0; overflow: auto; padding: .5rem; }
+.editorPane { flex: 1; min-height: 0; }
 .fileRow { display: grid; grid-template-columns: minmax(0, 1fr) 2rem; align-items: center; border-radius: calc(var(--radius) - 2px); }
 .fileRow.active, .fileRow:hover { background: var(--secondary); }
 .file { width: 100%; justify-content: flex-start; color: var(--foreground); border-radius: calc(var(--radius) - 2px); padding: 0 .625rem; height: 2.25rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -238,10 +246,12 @@ small { color: var(--muted-foreground); display: inline-flex; align-items: cente
 .previewPane iframe { border: 0; width: 100%; flex: 1; background: white; }
 .editorPane .monaco-editor { outline: none; }
 .emptyPreview { flex: 1; display: grid; place-items: center; color: var(--muted-foreground); }
-.settingsPanel { height: 100%; overflow: auto; padding: 1rem; display: flex; flex-direction: column; gap: .875rem; }
+.settingsPanel { height: 100%; overflow: auto; padding: 0; display: flex; flex-direction: column; gap: .875rem; }
 .settingsPanel h2 { margin: 0; font-size: 1rem; }
 .settingsPanel p { margin: .35rem 0 0; color: var(--muted-foreground); line-height: 1.5; font-size: .875rem; }
 .settingsPanel label { display: grid; gap: .45rem; font-weight: 500; font-size: .875rem; }
+.settingsTheme { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-top: .25rem; }
+.settingsThemeLabel { font-weight: 500; font-size: .875rem; }
 
 @media (max-width: 980px) {
   .workspace { flex-direction: column; overflow: auto; }
@@ -280,6 +290,47 @@ small { color: var(--muted-foreground); display: inline-flex; align-items: cente
   gap: .5rem;
   border-bottom: 1px solid var(--sidebar-border);
 }
+.sessionHeader .brand { font-size: .95rem; }
+.sessionHeaderActions { display: flex; align-items: center; gap: .375rem; }
+.sessionHeaderCollapsed { display: flex; flex-direction: column; align-items: center; gap: .5rem; width: 100%; }
+.sessionToolbar {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  padding: .5rem .625rem;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+.gearIcon { color: var(--sidebar-foreground); }
+.sandboxDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+  position: relative;
+  cursor: help;
+  flex-shrink: 0;
+}
+.sandboxDot.booting { background: oklch(0.75 0.15 70); }
+.sandboxDot.ready { background: oklch(0.6 0.18 145); }
+.sandboxDot::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: .25rem .5rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .75rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+  z-index: 10;
+}
+.sandboxDot:hover::after { opacity: 1; }
 .sessionList {
   min-height: 0;
   overflow: auto;
@@ -354,6 +405,60 @@ small { color: var(--muted-foreground); display: inline-flex; align-items: cente
   margin-left: .35rem;
   vertical-align: -0.125em;
 }
+
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: oklch(0 0 0 / 0.5);
+  backdrop-filter: blur(4px);
+}
+.dialogContent {
+  min-width: 400px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px oklch(0 0 0 / 0.3);
+}
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.dialogHeader h2 { margin: 0; font-size: 1rem; font-weight: 600; }
+.dialogBody { padding: 1.25rem; }
+.dialogClose {
+  background: none;
+  border: none;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  padding: .25rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialogClose:hover { color: var(--foreground); }
+.alertDialogDesc { margin: 0; color: var(--muted-foreground); font-size: .875rem; line-height: 1.5; }
+.alertDialogActions { display: flex; justify-content: flex-end; gap: .5rem; }
+.dialogInput {
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 .625rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: .875rem;
+}
+.dialogInput:focus { outline: 2px solid var(--ring); outline-offset: -1px; }
 
 @media (max-width: 980px) {
   .sessionSidebar, .sessionSidebar.collapsed {
