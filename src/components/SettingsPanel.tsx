@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useWorkbenchStore } from '../stores/workbenchStore';
+import { ThemeToggle } from './ThemeToggle';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -24,6 +25,10 @@ export function SettingsPanel() {
       <label>Base URL<Input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} /></label>
       <label>Model<Input value={model} onChange={(event) => setModel(event.target.value)} /></label>
       <label>API Key<Input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} /></label>
+      <div className="settingsTheme">
+        <label className="settingsThemeLabel">Theme</label>
+        <ThemeToggle />
+      </div>
       <Button>Save settings</Button>
     </form>
   );

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { ChatBox } from './components/ChatBox';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Header } from './components/Header';
 import { MessageList } from './components/MessageList';
 import { Sidebar } from './components/Sidebar';
 import { SessionSidebar } from './components/SessionSidebar';
@@ -69,7 +68,6 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header />
       {bootError && (
         <div className="bootErrorBanner">
           <AlertTriangle size={16} />
