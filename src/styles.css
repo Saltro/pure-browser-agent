@@ -180,6 +180,7 @@ button, input { font: inherit; }
 .message.assistant { max-width: 75%; align-self: flex-start; }
 .message.tool, .message.result, .message.approval { align-self: stretch; max-width: 100%; background: var(--background); }
 .message.approval { border-color: oklch(0.75 0.16 70 / .45); }
+.approvalActions { display: flex; gap: .5rem; margin-top: .5rem; }
 .message > div, .message details { min-width: 0; max-width: 100%; overflow: hidden; }
 summary { cursor: pointer; font-weight: 650; overflow-wrap: anywhere; }
 pre { width: 100%; max-width: 100%; white-space: pre-wrap; word-break: break-word; margin: .5rem 0 0; color: var(--code-text); background: var(--code-bg); border-radius: calc(var(--radius) - 2px); padding: .75rem; font-size: .78rem; overflow-x: auto; }

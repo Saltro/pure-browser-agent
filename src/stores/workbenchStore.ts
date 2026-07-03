@@ -66,6 +66,7 @@ type Store = {
   isBooted: boolean;
   isBooting: boolean;
   isAgentRunning: boolean;
+  pendingApproval: { command: string; toolCallId: string } | null;
   activeTab: 'files' | 'editor' | 'terminal' | 'preview' | 'settings';
   isSidebarCollapsed: boolean;
   sidebarWidth: number;
@@ -76,6 +77,7 @@ type Store = {
   setBooted: (value: boolean) => void;
   setBooting: (value: boolean) => void;
   setAgentRunning: (value: boolean) => void;
+  setPendingApproval: (approval: Store['pendingApproval']) => void;
   setPreviewUrl: (url: string) => void;
   setIframeUrl: (url: string) => void;
   setActiveTab: (tab: Store['activeTab']) => void;
@@ -117,6 +119,7 @@ export const useWorkbenchStore = create<Store>()(
       isBooted: false,
       isBooting: false,
       isAgentRunning: false,
+      pendingApproval: null,
       activeTab: 'editor',
       isSidebarCollapsed: false,
       sidebarWidth: 520,
@@ -134,6 +137,7 @@ export const useWorkbenchStore = create<Store>()(
       setBooted: (value) => set({ isBooted: value }),
       setBooting: (value) => set({ isBooting: value }),
       setAgentRunning: (value) => set({ isAgentRunning: value }),
+      setPendingApproval: (approval) => set({ pendingApproval: approval }),
       setPreviewUrl: (url) => set({ previewUrl: url }),
       setIframeUrl: (url) => set({ iframeUrl: url, previewUrl: url }),
       setActiveTab: (tab) => set({ activeTab: tab, isSidebarCollapsed: false }),
