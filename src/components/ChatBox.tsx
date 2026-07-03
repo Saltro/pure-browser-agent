@@ -8,7 +8,6 @@ import { Input } from './ui/input';
 export function ChatBox() {
   const [input, setInput] = useState('');
   const running = useWorkbenchStore((state) => state.isAgentRunning);
-  const setRunning = useWorkbenchStore((state) => state.setAgentRunning);
   const addMessage = useWorkbenchStore((state) => state.addMessage);
 
   async function submit(event?: FormEvent) {
@@ -16,19 +15,15 @@ export function ChatBox() {
     const value = input;
     if (!value.trim() || running) return;
     setInput('');
-    setRunning(true);
     try {
       await runAgentTurn(value);
     } catch (error) {
       addMessage({ type: 'assistant_message', content: error instanceof Error ? error.message : String(error) });
-    } finally {
-      setRunning(false);
     }
   }
 
   function stop() {
     interruptAgentTurn();
-    setRunning(false);
   }
 
   return (

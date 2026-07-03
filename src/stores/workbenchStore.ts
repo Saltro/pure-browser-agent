@@ -155,7 +155,18 @@ export const useWorkbenchStore = create<Store>()(
           return { files, activePath: state.activePath === path ? files[0]?.path || '' : state.activePath };
         }),
       resetWorkspace: () => set({ files: starterFiles, activePath: 'src/main.jsx', terminalOutput: '', previewUrl: '', iframeUrl: '' }),
-      appendTerminal: (chunk) => set((state) => ({ terminalOutput: state.terminalOutput + chunk })),
+      appendTerminal: (chunk) =>
+        set((state) => {
+          let output = state.terminalOutput + chunk
+          const lines = output.split('\n')
+          if (lines.length > 2000) {
+            output = lines.slice(-2000).join('\n')
+          }
+          if (output.length > 50000) {
+            output = output.slice(-50000)
+          }
+          return { terminalOutput: output }
+        }),
       clearTerminal: () => set({ terminalOutput: '' }),
       addMessage: (event) => {
         const eventId = id();
