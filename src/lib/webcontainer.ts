@@ -4,6 +4,12 @@ import type { FileNode } from '../types/workbench';
 let instance: WebContainer | null = null;
 let booting: Promise<WebContainer> | null = null;
 
+const dirtyPaths = new Set<string>();
+
+export function markDirty(path: string) {
+  dirtyPaths.add(path);
+}
+
 function insertFile(tree: FileSystemTree, path: string, content: string) {
   const parts = path.split('/').filter(Boolean);
   let cursor = tree;
@@ -28,7 +34,12 @@ export function filesToTree(files: FileNode[]): FileSystemTree {
 
 export async function bootWebContainer(files: FileNode[]) {
   if (!instance) {
-    booting ||= WebContainer.boot();
+    if (!booting) {
+      booting = WebContainer.boot().catch((err) => {
+        booting = null;
+        throw err;
+      });
+    }
     instance = await booting;
   }
   await instance.mount(filesToTree(files));
@@ -61,9 +72,18 @@ export async function readContainerFile(path: string) {
   return await wc.fs.readFile(path, 'utf-8');
 }
 
-export async function syncFilesToContainer(files: FileNode[]) {
+export async function syncFilesToContainer(files: FileNode[], force = false) {
   getWebContainer();
-  for (const file of files) await writeContainerFile(file.path, file.content);
+  const toSync = force ? files : files.filter((f) => dirtyPaths.has(f.path));
+  for (const file of toSync) {
+    await writeContainerFile(file.path, file.content);
+    dirtyPaths.delete(file.path);
+  }
+  return toSync.length;
+}
+
+export async function syncAllFilesToContainer(files: FileNode[]) {
+  return syncFilesToContainer(files, true);
 }
 
 export async function runContainerCommand(command: string, onData: (chunk: string) => void, signal?: AbortSignal) {

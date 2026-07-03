@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { ChatBox } from './components/ChatBox';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { MessageList } from './components/MessageList';
 import { Sidebar } from './components/Sidebar';
 import { SessionSidebar } from './components/SessionSidebar';
 import { bootWebContainer } from './lib/webcontainer';
 import { useWorkbenchStore } from './stores/workbenchStore';
+import { Button } from './components/ui/button';
 
 export default function App() {
   const files = useWorkbenchStore((state) => state.files);
@@ -16,6 +19,8 @@ export default function App() {
   const setPreviewUrl = useWorkbenchStore((state) => state.setPreviewUrl);
   const addMessage = useWorkbenchStore((state) => state.addMessage);
   const appendTerminal = useWorkbenchStore((state) => state.appendTerminal);
+
+  const [bootError, setBootError] = useState<string | null>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -29,29 +34,34 @@ export default function App() {
     return () => systemDark.removeEventListener('change', applyTheme);
   }, [themeMode]);
 
+  const doBoot = useCallback(async () => {
+    setBootError(null);
+    setBooting(true);
+    const eventId = addMessage({ type: 'tool_call', toolName: 'boot_webcontainer', input: { files: files.length }, status: 'running' });
+    try {
+      const wc = await bootWebContainer(files);
+      wc.on('server-ready', (_port, url) => {
+        setPreviewUrl(url);
+        addMessage({ type: 'tool_result', toolName: 'server-ready', output: { url } });
+      });
+      setBooted(true);
+      appendTerminal('WebContainer sandbox connected. Try `npm install`, then `npm run dev`.\n');
+      useWorkbenchStore.getState().updateToolStatus(eventId, 'success');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setBootError(msg);
+      useWorkbenchStore.getState().updateToolStatus(eventId, 'error');
+      addMessage({ type: 'assistant_message', content: msg });
+    } finally {
+      setBooting(false);
+    }
+  }, [files, addMessage, appendTerminal, setBooted, setBooting, setPreviewUrl]);
+
   useEffect(() => {
     let cancelled = false;
-    async function boot() {
-      setBooting(true);
-      const eventId = addMessage({ type: 'tool_call', toolName: 'boot_webcontainer', input: { files: files.length }, status: 'running' });
-      try {
-        const wc = await bootWebContainer(files);
-        if (cancelled) return;
-        wc.on('server-ready', (_port, url) => {
-          setPreviewUrl(url);
-          addMessage({ type: 'tool_result', toolName: 'server-ready', output: { url } });
-        });
-        setBooted(true);
-        appendTerminal('WebContainer sandbox connected. Try `npm install`, then `npm run dev`.\n');
-        useWorkbenchStore.getState().updateToolStatus(eventId, 'success');
-      } catch (error) {
-        useWorkbenchStore.getState().updateToolStatus(eventId, 'error');
-        addMessage({ type: 'assistant_message', content: error instanceof Error ? error.message : String(error) });
-      } finally {
-        setBooting(false);
-      }
-    }
-    boot();
+    doBoot().then(() => {
+      if (cancelled) return;
+    });
     return () => {
       cancelled = true;
     };
@@ -60,13 +70,26 @@ export default function App() {
   return (
     <div className="app">
       <Header />
+      {bootError && (
+        <div className="bootErrorBanner">
+          <AlertTriangle size={16} />
+          <span>WebContainer boot failed: {bootError}</span>
+          <Button variant="outline" size="sm" className="small" onClick={doBoot}>
+            <RefreshCw size={14} /> Retry
+          </Button>
+        </div>
+      )}
       <main className={isSidebarCollapsed ? 'workspace sidebarCollapsed' : 'workspace'}>
         <SessionSidebar />
         <section className="conversation">
-          <MessageList />
+          <ErrorBoundary>
+            <MessageList />
+          </ErrorBoundary>
           <ChatBox />
         </section>
-        <Sidebar />
+        <ErrorBoundary>
+          <Sidebar />
+        </ErrorBoundary>
       </main>
     </div>
   );
