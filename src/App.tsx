@@ -8,6 +8,8 @@ import { SessionSidebar } from './components/SessionSidebar';
 import { bootWebContainer } from './lib/webcontainer';
 import { useWorkbenchStore } from './stores/workbenchStore';
 import { Button } from './components/ui/button';
+import { TooltipProvider } from './components/ui/tooltip';
+import { ToastProvider } from './components/ui/toast';
 
 export default function App() {
   const files = useWorkbenchStore((state) => state.files);
@@ -67,28 +69,32 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app">
-      {bootError && (
-        <div className="bootErrorBanner">
-          <AlertTriangle size={16} />
-          <span>WebContainer boot failed: {bootError}</span>
-          <Button variant="outline" size="sm" className="small" onClick={doBoot}>
-            <RefreshCw size={14} /> Retry
-          </Button>
+    <TooltipProvider>
+      <ToastProvider>
+        <div className="app">
+          {bootError && (
+            <div className="bootErrorBanner">
+              <AlertTriangle size={16} />
+              <span>WebContainer boot failed: {bootError}</span>
+              <Button variant="outline" size="sm" className="small" onClick={doBoot}>
+                <RefreshCw size={14} /> Retry
+              </Button>
+            </div>
+          )}
+          <main className={isSidebarCollapsed ? 'workspace sidebarCollapsed' : 'workspace'}>
+            <SessionSidebar />
+            <section className="conversation">
+              <ErrorBoundary>
+                <MessageList />
+              </ErrorBoundary>
+              <ChatBox />
+            </section>
+            <ErrorBoundary>
+              <Sidebar />
+            </ErrorBoundary>
+          </main>
         </div>
-      )}
-      <main className={isSidebarCollapsed ? 'workspace sidebarCollapsed' : 'workspace'}>
-        <SessionSidebar />
-        <section className="conversation">
-          <ErrorBoundary>
-            <MessageList />
-          </ErrorBoundary>
-          <ChatBox />
-        </section>
-        <ErrorBoundary>
-          <Sidebar />
-        </ErrorBoundary>
-      </main>
-    </div>
+      </ToastProvider>
+    </TooltipProvider>
   );
 }

@@ -1,13 +1,27 @@
-import { Bot, CheckCircle2, ChevronRight, CircleAlert, Clock, Loader2, ShieldAlert, User, Wrench } from 'lucide-react';
-import { memo, useEffect, useRef } from 'react';
-import { approveAndContinue, denyAndContinue } from '../lib/agent';
-import type { AppMessage } from '../types/workbench';
-import { useWorkbenchStore } from '../stores/workbenchStore';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import {
+  Bot,
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  Clock,
+  Loader2,
+  ShieldAlert,
+  User,
+  Wrench,
+} from "lucide-react";
+import { memo, useEffect, useRef } from "react";
+import { approveAndContinue, denyAndContinue } from "../lib/agent";
+import type { AppMessage } from "../types/workbench";
+import { useWorkbenchStore } from "../stores/workbenchStore";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 
 function timeLabel(ts: number) {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date(ts).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function renderContentWithCode(content: string) {
@@ -21,7 +35,11 @@ function renderContentWithCode(content: string) {
     if (match.index > lastIndex) {
       parts.push(<p key={key++}>{content.slice(lastIndex, match.index)}</p>);
     }
-    parts.push(<pre key={key++}><code>{match[2]}</code></pre>);
+    parts.push(
+      <pre key={key++}>
+        <code>{match[2]}</code>
+      </pre>,
+    );
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < content.length) {
@@ -31,54 +49,118 @@ function renderContentWithCode(content: string) {
   return parts.length > 0 ? parts : <p>{content}</p>;
 }
 
-const HIDDEN_TOOLS = new Set(['boot_webcontainer', 'server-ready', 'sync_file', 'sync_workspace']);
+const HIDDEN_TOOLS = new Set([
+  "boot_webcontainer",
+  "server-ready",
+  "sync_file",
+  "sync_workspace",
+]);
 
-const MessageItem = memo(function MessageItem({ event }: { event: AppMessage }) {
-  if (event.type === 'user_message') {
-    return <div className="message user"><User size={16} /><div><p>{event.content}</p><small><Clock size={11} /> {timeLabel(event.createdAt)}</small></div></div>;
-  }
-  if (event.type === 'assistant_message') {
-    return <div className="message assistant"><Bot size={16} /><div>{renderContentWithCode(event.content)}{event.streaming && <Loader2 className="spin inlineIcon" size={12} />}<small><Clock size={11} /> {timeLabel(event.createdAt)}</small></div></div>;
-  }
-  if (event.type === 'approval_request') {
+const iconClassName = "mt-[3px]";
+
+const MessageItem = memo(function MessageItem({
+  event,
+}: {
+  event: AppMessage;
+}) {
+  if (event.type === "user_message") {
     return (
-      <div className="message approval">
-        <ShieldAlert size={16} />
+      <div className="message user">
+        <User size={16} className={iconClassName} />
         <div>
-          <p>{event.reason}</p>
-          {event.command && <pre>{event.command}</pre>}
-          <div className="approvalActions">
-            <Button size="sm" onClick={() => approveAndContinue()}>Approve</Button>
-            <Button size="sm" variant="destructive" onClick={() => denyAndContinue()}>Deny</Button>
-          </div>
-          <small><Clock size={11} /> {timeLabel(event.createdAt)}</small>
+          <p>{event.content}</p>
+          <small>
+            <Clock size={11} className={iconClassName} />{" "}
+            {timeLabel(event.createdAt)}
+          </small>
         </div>
       </div>
     );
   }
-  if (event.type === 'tool_call') {
+  if (event.type === "assistant_message") {
+    return (
+      <div className="message assistant">
+        <Bot size={16} className={iconClassName} />
+        <div>
+          {renderContentWithCode(event.content)}
+          {event.streaming && (
+            <Loader2 className={`${iconClassName} spin inlineIcon`} size={12} />
+          )}
+          <small>
+            <Clock size={11} className={iconClassName} />{" "}
+            {timeLabel(event.createdAt)}
+          </small>
+        </div>
+      </div>
+    );
+  }
+  if (event.type === "approval_request") {
+    return (
+      <div className="message approval">
+        <ShieldAlert size={16} className={iconClassName} />
+        <div>
+          <p>{event.reason}</p>
+          {event.command && <pre>{event.command}</pre>}
+          <div className="approvalActions">
+            <Button size="sm" onClick={() => approveAndContinue()}>
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => denyAndContinue()}
+            >
+              Deny
+            </Button>
+          </div>
+          <small>
+            <Clock size={11} className={iconClassName} />{" "}
+            {timeLabel(event.createdAt)}
+          </small>
+        </div>
+      </div>
+    );
+  }
+  if (event.type === "tool_call") {
     if (HIDDEN_TOOLS.has(event.toolName)) return null;
     return (
       <div className="message tool">
-        {event.status === 'running' ? <Loader2 className="spin" size={16} /> : event.status === 'success' ? <CheckCircle2 size={16} /> : event.status === 'error' ? <CircleAlert size={16} /> : <Wrench size={16} />}
-        <details open={event.status === 'running' || event.status === 'error'}>
-          <summary>{event.toolName} <Badge className={event.status}>{event.status}</Badge></summary>
+        {event.status === "running" ? (
+          <Loader2 className={`${iconClassName} spin`} size={16} />
+        ) : event.status === "success" ? (
+          <CheckCircle2 size={16} className={iconClassName} />
+        ) : event.status === "error" ? (
+          <CircleAlert size={16} className={iconClassName} />
+        ) : (
+          <Wrench size={16} className={iconClassName} />
+        )}
+        <details open={event.status === "running" || event.status === "error"}>
+          <summary>
+            {event.toolName}{" "}
+            <Badge className={event.status}>{event.status}</Badge>
+          </summary>
           <pre>{JSON.stringify(event.input, null, 2)}</pre>
-          <small><Clock size={11} /> {timeLabel(event.createdAt)}</small>
+          <small>
+            <Clock size={11} className={iconClassName} />{" "}
+            {timeLabel(event.createdAt)}
+          </small>
         </details>
       </div>
     );
   }
-  if (event.type === 'tool_result') {
+  if (event.type === "tool_result") {
     if (HIDDEN_TOOLS.has(event.toolName)) return null;
   }
   return (
     <div className="message result">
-      <ChevronRight size={16} />
+      <ChevronRight size={16} className={iconClassName} />
       <details>
         <summary>{event.toolName} result</summary>
         <pre>{JSON.stringify(event.output, null, 2)}</pre>
-        <small><Clock size={11} /> {timeLabel(event.createdAt)}</small>
+        <small>
+          <Clock size={11} className={iconClassName} />{" "}
+          {timeLabel(event.createdAt)}
+        </small>
       </details>
     </div>
   );
@@ -86,12 +168,14 @@ const MessageItem = memo(function MessageItem({ event }: { event: AppMessage }) 
 
 export function MessageList() {
   const messages = useWorkbenchStore(
-    (state) => state.sessions.find((s) => s.id === state.activeSessionId)?.messages ?? []
+    (state) =>
+      state.sessions.find((s) => s.id === state.activeSessionId)?.messages ??
+      [],
   );
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length]);
 
   return (
