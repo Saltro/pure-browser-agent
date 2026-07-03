@@ -1,6 +1,6 @@
 import Editor from '@monaco-editor/react';
 import { Save } from 'lucide-react';
-import { isWebContainerBooted, syncFilesToContainer, writeContainerFile } from '../lib/webcontainer';
+import { isWebContainerBooted, markDirty, syncFilesToContainer, writeContainerFile } from '../lib/webcontainer';
 import { useWorkbenchStore } from '../stores/workbenchStore';
 import { Button } from './ui/button';
 
@@ -15,9 +15,12 @@ function languageFor(path: string) {
 export function EditorPane() {
   const activePath = useWorkbenchStore((state) => state.activePath);
   const files = useWorkbenchStore((state) => state.files);
+  const themeMode = useWorkbenchStore((state) => state.themeMode);
   const file = files.find((item) => item.path === activePath);
   const upsertFile = useWorkbenchStore((state) => state.upsertFile);
   const addMessage = useWorkbenchStore((state) => state.addMessage);
+
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   if (!file) return <section className="panel editorPane emptyState">No file selected</section>;
 
@@ -29,8 +32,8 @@ export function EditorPane() {
 
   async function syncAllFiles() {
     if (!isWebContainerBooted()) return;
-    await syncFilesToContainer(files);
-    addMessage({ type: 'tool_result', toolName: 'sync_workspace', output: { files: files.length } });
+    const synced = await syncFilesToContainer(files, true);
+    addMessage({ type: 'tool_result', toolName: 'sync_workspace', output: { files: synced } });
   }
 
   return (
@@ -44,11 +47,11 @@ export function EditorPane() {
       </div>
       <Editor
         height="100%"
-        theme="vs-dark"
+        theme={isDark ? 'vs-dark' : 'vs'}
         path={file.path}
         language={languageFor(file.path)}
         value={file.content}
-        onChange={(value) => upsertFile(file.path, value || '')}
+        onChange={(value) => { upsertFile(file.path, value || ''); markDirty(file.path); }}
         options={{ minimap: { enabled: false }, fontSize: 13, wordWrap: 'on', tabSize: 2 }}
       />
     </section>
