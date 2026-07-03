@@ -697,6 +697,7 @@ small {
 }
 .sessionHeader.collapsed {
     height: auto;
+    padding-left: 0.625rem;
 }
 .sessionHeader .brand {
     font-size: 0.95rem;
