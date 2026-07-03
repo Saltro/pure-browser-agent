@@ -1,42 +1,70 @@
+import * as React from 'react';
+import { Dialog as RadixDialog, AlertDialog as RadixAlertDialog } from 'radix-ui';
 import { X } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from './button';
+
+// --- Dialog (controlled, with title prop) ---
 
 type DialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title?: string;
-  children: ReactNode;
+  children: React.ReactNode;
 };
 
-export function Dialog({ open, onOpenChange, title, children }: DialogProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onOpenChange(false);
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [open, onOpenChange]);
-
-  if (!open) return null;
-
+function Dialog({ open, onOpenChange, title, children }: DialogProps) {
   return (
-    <div className="dialogOverlay" ref={overlayRef} onClick={(e) => { if (e.target === overlayRef.current) onOpenChange(false); }}>
-      <div className="dialogContent" role="dialog" aria-modal="true">
-        {title && (
-          <div className="dialogHeader">
-            <h2>{title}</h2>
-            <button className="dialogClose" onClick={() => onOpenChange(false)} aria-label="Close"><X size={16} /></button>
-          </div>
-        )}
-        <div className="dialogBody">{children}</div>
-      </div>
-    </div>
+    <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
+      <RadixDialog.Portal>
+        <RadixDialog.Overlay
+          className={cn(
+            'fixed inset-0 z-50 bg-black/50 backdrop-blur-sm',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          )}
+        />
+        <RadixDialog.Content
+          className={cn(
+            'fixed left-[50%] top-[50%] z-50 w-full max-w-lg',
+            '-translate-x-1/2 -translate-y-1/2',
+            'border border-border bg-background p-0 shadow-lg',
+            'duration-200',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+            'data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
+            'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+            'sm:rounded-lg',
+          )}
+        >
+          {title && (
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <RadixDialog.Title className="text-base font-semibold">
+                {title}
+              </RadixDialog.Title>
+              <RadixDialog.Close
+                className={cn(
+                  'rounded-sm opacity-70 ring-offset-background',
+                  'transition-opacity hover:opacity-100',
+                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                  'disabled:pointer-events-none',
+                )}
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </RadixDialog.Close>
+            </div>
+          )}
+          <div className="p-5">{children}</div>
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    </RadixDialog.Root>
   );
 }
+
+// --- AlertDialog (controlled) ---
 
 type AlertDialogProps = {
   open: boolean;
@@ -49,7 +77,7 @@ type AlertDialogProps = {
   onConfirm: () => void;
 };
 
-export function AlertDialog({
+function AlertDialog({
   open,
   onOpenChange,
   title,
@@ -60,21 +88,59 @@ export function AlertDialog({
   onConfirm,
 }: AlertDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={title}>
-      {description && <p className="alertDialogDesc">{description}</p>}
-      <div className="alertDialogActions">
-        <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{cancelLabel}</Button>
-        <Button
-          variant={destructive ? 'destructive' : 'default'}
-          size="sm"
-          onClick={() => { onConfirm(); onOpenChange(false); }}
+    <RadixAlertDialog.Root open={open} onOpenChange={onOpenChange}>
+      <RadixAlertDialog.Portal>
+        <RadixAlertDialog.Overlay
+          className={cn(
+            'fixed inset-0 z-50 bg-black/50 backdrop-blur-sm',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          )}
+        />
+        <RadixAlertDialog.Content
+          className={cn(
+            'fixed left-[50%] top-[50%] z-50 w-full max-w-md',
+            '-translate-x-1/2 -translate-y-1/2',
+            'border border-border bg-background p-6 shadow-lg',
+            'duration-200',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+            'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+            'sm:rounded-lg',
+          )}
         >
-          {confirmLabel}
-        </Button>
-      </div>
-    </Dialog>
+          <RadixAlertDialog.Title className="text-base font-semibold">
+            {title}
+          </RadixAlertDialog.Title>
+          {description && (
+            <RadixAlertDialog.Description className="mt-2 text-sm text-muted-foreground">
+              {description}
+            </RadixAlertDialog.Description>
+          )}
+          <div className="mt-5 flex justify-end gap-2">
+            <RadixAlertDialog.Cancel asChild>
+              <Button variant="ghost" size="sm">
+                {cancelLabel}
+              </Button>
+            </RadixAlertDialog.Cancel>
+            <RadixAlertDialog.Action asChild>
+              <Button
+                variant={destructive ? 'destructive' : 'default'}
+                size="sm"
+                onClick={onConfirm}
+              >
+                {confirmLabel}
+              </Button>
+            </RadixAlertDialog.Action>
+          </div>
+        </RadixAlertDialog.Content>
+      </RadixAlertDialog.Portal>
+    </RadixAlertDialog.Root>
   );
 }
+
+// --- PromptDialog (controlled, built on Dialog) ---
 
 type PromptDialogProps = {
   open: boolean;
@@ -88,7 +154,7 @@ type PromptDialogProps = {
   onConfirm: (value: string) => void;
 };
 
-export function PromptDialog({
+function PromptDialog({
   open,
   onOpenChange,
   title,
@@ -99,13 +165,13 @@ export function PromptDialog({
   cancelLabel = 'Cancel',
   onConfirm,
 }: PromptDialogProps) {
-  const [value, setValue] = useState(defaultValue);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = React.useState(defaultValue);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (open) {
       setValue(defaultValue);
-      setTimeout(() => inputRef.current?.select(), 0);
+      setTimeout(() => inputRef.current?.select(), 50);
     }
   }, [open, defaultValue]);
 
@@ -119,25 +185,34 @@ export function PromptDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title={title}>
-      {description && <p className="alertDialogDesc">{description}</p>}
+      {description && (
+        <p className="mb-3 text-sm text-muted-foreground">{description}</p>
+      )}
       <input
         ref={inputRef}
-        className="dialogInput"
+        className={cn(
+          'flex h-9 w-full rounded-md border border-input bg-transparent',
+          'px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground',
+          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+        )}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleConfirm();
-          if (e.key === 'Escape') onOpenChange(false);
         }}
         placeholder={placeholder}
         autoFocus
       />
-      <div className="alertDialogActions">
-        <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{cancelLabel}</Button>
-        <Button variant="default" size="sm" onClick={handleConfirm} disabled={!value.trim()}>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+          {cancelLabel}
+        </Button>
+        <Button size="sm" onClick={handleConfirm} disabled={!value.trim()}>
           {confirmLabel}
         </Button>
       </div>
     </Dialog>
   );
 }
+
+export { Dialog, AlertDialog, PromptDialog };
