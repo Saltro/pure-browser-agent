@@ -38,6 +38,8 @@ function buildSystemPrompt(filePaths: string[]): string {
   return `${baseSystemPrompt}\n\nCurrent workspace files:\n${filePaths.map((p) => `- ${p}`).join('\n')}`
 }
 
+const INTERNAL_TOOLS = new Set(['boot_webcontainer', 'server-ready', 'sync_file', 'sync_workspace'])
+
 function buildMessagesFromHistory(messages: AppMessage[], newUserInput: string, filePaths: string[]): ChatMessage[] {
   const result: ChatMessage[] = [{ role: 'system', content: buildSystemPrompt(filePaths) }]
 
@@ -55,7 +57,9 @@ function buildMessagesFromHistory(messages: AppMessage[], newUserInput: string, 
       while (j < messages.length) {
         const next = messages[j]
         if (next.type !== 'tool_call') break
-        toolCalls.push({ id: next.toolCallId, type: 'function', function: { name: next.toolName, arguments: JSON.stringify(next.input) } })
+        if (!INTERNAL_TOOLS.has(next.toolName)) {
+          toolCalls.push({ id: next.toolCallId, type: 'function', function: { name: next.toolName, arguments: JSON.stringify(next.input) } })
+        }
         j++
       }
 
@@ -95,7 +99,7 @@ async function executeTool(call: ToolCall, signal: AbortSignal) {
       await writeContainerFile(path, content)
       store.upsertFile(path, content)
       store.setActivePath(path)
-      store.setActiveTab('editor')
+      store.setActiveTab('workspace')
       return { path, bytes: content.length }
     }
     case 'run_command': {

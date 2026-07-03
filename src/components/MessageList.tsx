@@ -31,6 +31,8 @@ function renderContentWithCode(content: string) {
   return parts.length > 0 ? parts : <p>{content}</p>;
 }
 
+const HIDDEN_TOOLS = new Set(['boot_webcontainer', 'server-ready', 'sync_file', 'sync_workspace']);
+
 const MessageItem = memo(function MessageItem({ event }: { event: AppMessage }) {
   if (event.type === 'user_message') {
     return <div className="message user"><User size={16} /><div><p>{event.content}</p><small><Clock size={11} /> {timeLabel(event.createdAt)}</small></div></div>;
@@ -55,6 +57,7 @@ const MessageItem = memo(function MessageItem({ event }: { event: AppMessage }) 
     );
   }
   if (event.type === 'tool_call') {
+    if (HIDDEN_TOOLS.has(event.toolName)) return null;
     return (
       <div className="message tool">
         {event.status === 'running' ? <Loader2 className="spin" size={16} /> : event.status === 'success' ? <CheckCircle2 size={16} /> : event.status === 'error' ? <CircleAlert size={16} /> : <Wrench size={16} />}
@@ -65,6 +68,9 @@ const MessageItem = memo(function MessageItem({ event }: { event: AppMessage }) 
         </details>
       </div>
     );
+  }
+  if (event.type === 'tool_result') {
+    if (HIDDEN_TOOLS.has(event.toolName)) return null;
   }
   return (
     <div className="message result">

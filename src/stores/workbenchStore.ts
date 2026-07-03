@@ -67,7 +67,7 @@ type Store = {
   isBooting: boolean;
   isAgentRunning: boolean;
   pendingApproval: { command: string; toolCallId: string } | null;
-  activeTab: 'files' | 'editor' | 'terminal' | 'preview' | 'settings';
+  activeTab: 'workspace' | 'terminal' | 'preview';
   isSidebarCollapsed: boolean;
   sidebarWidth: number;
   isSessionSidebarCollapsed: boolean;
@@ -102,6 +102,10 @@ type Store = {
   setLlm: (settings: LlmSettings) => void;
 };
 
+function stripAnsi(str: string): string {
+  return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1b\[[0-9;]*[GKH]/g, '').replace(/\r/g, '');
+}
+
 function touchSession(session: ConversationSession, messages: AppMessage[]) {
   return { ...session, messages, updatedAt: now() };
 }
@@ -120,7 +124,7 @@ export const useWorkbenchStore = create<Store>()(
       isBooting: false,
       isAgentRunning: false,
       pendingApproval: null,
-      activeTab: 'editor',
+      activeTab: 'workspace',
       isSidebarCollapsed: false,
       sidebarWidth: 520,
       isSessionSidebarCollapsed: false,
@@ -161,7 +165,7 @@ export const useWorkbenchStore = create<Store>()(
       resetWorkspace: () => set({ files: starterFiles, activePath: 'src/main.jsx', terminalOutput: '', previewUrl: '', iframeUrl: '' }),
       appendTerminal: (chunk) =>
         set((state) => {
-          let output = state.terminalOutput + chunk
+          let output = state.terminalOutput + stripAnsi(chunk)
           const lines = output.split('\n')
           if (lines.length > 2000) {
             output = lines.slice(-2000).join('\n')
