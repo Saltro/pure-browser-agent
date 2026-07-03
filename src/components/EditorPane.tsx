@@ -27,13 +27,13 @@ export function EditorPane() {
   async function syncCurrentFile() {
     if (!file || !isWebContainerBooted()) return;
     await writeContainerFile(file.path, file.content);
-    addMessage({ type: 'tool_result', toolName: 'sync_file', output: { path: file.path } });
+    addMessage({ type: 'tool_result', toolCallId: 'sync_file', toolName: 'sync_file', output: { path: file.path } });
   }
 
   async function syncAllFiles() {
     if (!isWebContainerBooted()) return;
     const synced = await syncFilesToContainer(files, true);
-    addMessage({ type: 'tool_result', toolName: 'sync_workspace', output: { files: synced } });
+    addMessage({ type: 'tool_result', toolCallId: 'sync_workspace', toolName: 'sync_workspace', output: { files: synced } });
   }
 
   return (

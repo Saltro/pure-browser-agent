@@ -37,12 +37,12 @@ export default function App() {
   const doBoot = useCallback(async () => {
     setBootError(null);
     setBooting(true);
-    const eventId = addMessage({ type: 'tool_call', toolName: 'boot_webcontainer', input: { files: files.length }, status: 'running' });
+    const eventId = addMessage({ type: 'tool_call', toolCallId: 'boot', toolName: 'boot_webcontainer', input: { files: files.length }, status: 'running' });
     try {
       const wc = await bootWebContainer(files);
       wc.on('server-ready', (_port, url) => {
         setPreviewUrl(url);
-        addMessage({ type: 'tool_result', toolName: 'server-ready', output: { url } });
+        addMessage({ type: 'tool_result', toolCallId: 'boot', toolName: 'server-ready', output: { url } });
       });
       setBooted(true);
       appendTerminal('WebContainer sandbox connected. Try `npm install`, then `npm run dev`.\n');

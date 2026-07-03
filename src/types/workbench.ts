@@ -9,12 +9,13 @@ export type AppMessage =
   | {
       id: string;
       type: 'tool_call';
+      toolCallId: string;
       toolName: string;
       input: unknown;
       status: 'pending' | 'running' | 'success' | 'error';
       createdAt: number;
     }
-  | { id: string; type: 'tool_result'; toolName: string; output: unknown; createdAt: number }
+  | { id: string; type: 'tool_result'; toolCallId: string; toolName: string; output: unknown; createdAt: number }
   | { id: string; type: 'approval_request'; reason: string; command?: string; createdAt: number };
 
 export type ConversationSession = {
