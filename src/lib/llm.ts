@@ -51,6 +51,70 @@ export const tools = [
       description: 'Open a URL in the preview iframe. Use this to inspect or navigate browser pages in the embedded preview, similar to a lightweight browser open action.',
       parameters: { type: 'object', properties: { url: { type: 'string' } }, required: ['url'], additionalProperties: false }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'ask_question',
+      description: 'Ask the user one or more structured questions and wait for their answer before continuing.',
+      parameters: {
+        type: 'object',
+        properties: {
+          questions: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 5,
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                title: { type: 'string' },
+                description: { type: 'string' },
+                kind: { type: 'string', enum: ['single', 'multiple', 'text'] },
+                options: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      label: { type: 'string' },
+                      description: { type: 'string' }
+                    },
+                    required: ['id', 'label'],
+                    additionalProperties: false
+                  }
+                },
+                allowCustom: { type: 'boolean' }
+              },
+              required: ['id', 'title', 'kind'],
+              additionalProperties: false
+            }
+          }
+        },
+        required: ['questions'],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'subagent_call',
+      description: 'Delegate a complex task to a subagent. The caller receives only the subagent final answer.',
+      parameters: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string' },
+          subagentSessionId: { type: 'string' },
+          tools: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        },
+        required: ['prompt'],
+        additionalProperties: false
+      }
+    }
   }
 ];
 
@@ -106,10 +170,16 @@ export async function callOpenAICompatible(settings: LlmSettings, messages: Chat
   };
 }
 
+function toolsFor(allowedTools?: string[]) {
+  if (!allowedTools?.length) return tools;
+  const allowed = new Set(allowedTools);
+  return tools.filter((tool) => allowed.has(tool.function.name));
+}
+
 export async function streamOpenAICompatible(
   settings: LlmSettings,
   messages: ChatMessage[],
-  options: { signal?: AbortSignal; onToken?: (token: string) => void } = {}
+  options: { signal?: AbortSignal; onToken?: (token: string) => void; allowedTools?: string[] } = {}
 ) {
   if (!settings.apiKey) throw new Error('Missing API key. Open Settings and configure an OpenAI-compatible endpoint first.');
 
@@ -123,7 +193,7 @@ export async function streamOpenAICompatible(
     body: JSON.stringify({
       model: settings.model,
       messages,
-      tools,
+      tools: toolsFor(options.allowedTools),
       tool_choice: 'auto',
       temperature: 0.2,
       stream: true
