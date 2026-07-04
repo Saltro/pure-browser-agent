@@ -13,6 +13,8 @@ import { memo, useEffect, useRef } from "react";
 import { approveAndContinue, denyAndContinue } from "../lib/agent";
 import type { AppMessage } from "../types/workbench";
 import { useWorkbenchStore } from "../stores/workbenchStore";
+import { QuestionCard } from "./messages/QuestionCard";
+import { SubagentTrace } from "./messages/SubagentTrace";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
@@ -121,6 +123,23 @@ const MessageItem = memo(function MessageItem({
       </div>
     );
   }
+  if (event.type === "question_request") {
+    return (
+      <div className="message question">
+        <QuestionCard event={event} />
+      </div>
+    );
+  }
+  if (event.type === "question_answer") {
+    return null;
+  }
+  if (event.type === "subagent_trace") {
+    return (
+      <div className="message subagent">
+        <SubagentTrace event={event} />
+      </div>
+    );
+  }
   if (event.type === "tool_call") {
     if (HIDDEN_TOOLS.has(event.toolName)) return null;
     return (
@@ -150,20 +169,21 @@ const MessageItem = memo(function MessageItem({
   }
   if (event.type === "tool_result") {
     if (HIDDEN_TOOLS.has(event.toolName)) return null;
+    return (
+      <div className="message result">
+        <ChevronRight size={16} className={iconClassName} />
+        <details>
+          <summary>{event.toolName} result</summary>
+          <pre>{JSON.stringify(event.output, null, 2)}</pre>
+          <small>
+            <Clock size={11} className={iconClassName} />{" "}
+            {timeLabel(event.createdAt)}
+          </small>
+        </details>
+      </div>
+    );
   }
-  return (
-    <div className="message result">
-      <ChevronRight size={16} className={iconClassName} />
-      <details>
-        <summary>{event.toolName} result</summary>
-        <pre>{JSON.stringify(event.output, null, 2)}</pre>
-        <small>
-          <Clock size={11} className={iconClassName} />{" "}
-          {timeLabel(event.createdAt)}
-        </small>
-      </details>
-    </div>
-  );
+  return null;
 });
 
 export function MessageList() {

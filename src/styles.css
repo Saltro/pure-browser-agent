@@ -288,13 +288,19 @@ input {
 }
 .message.tool,
 .message.result,
-.message.approval {
+.message.approval,
+.message.question,
+.message.subagent {
     align-self: stretch;
     max-width: 100%;
     background: var(--background);
 }
 .message.approval {
     border-color: oklch(0.75 0.16 70 / 0.45);
+}
+.message.question,
+.message.subagent {
+    padding: 0;
 }
 .approvalActions {
     display: flex;
@@ -324,6 +330,174 @@ pre {
     padding: 0.75rem;
     font-size: 0.78rem;
     overflow-x: auto;
+}
+.questionCard {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+}
+.questionCard.compact {
+    align-items: start;
+}
+.questionIcon {
+    margin-top: 0.1875rem;
+}
+.questionBody,
+.questionSummary {
+    min-width: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+.questionHeader {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.questionHeader strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.questionList {
+    display: grid;
+    gap: 0.875rem;
+}
+.questionField {
+    min-width: 0;
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.questionField legend {
+    width: 100%;
+    padding: 0;
+    font-weight: 650;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+.questionField p,
+.questionSummary p {
+    margin: 0;
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+}
+.questionOptions {
+    display: grid;
+    gap: 0.375rem;
+}
+.questionOption {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    background: var(--card);
+}
+.questionOption input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0.125rem 0 0;
+    accent-color: var(--primary);
+}
+.questionOption span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.questionOption small {
+    display: block;
+    margin-top: 0.125rem;
+}
+.questionActions {
+    display: flex;
+    justify-content: flex-end;
+}
+.subagentTrace {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+}
+.subagentRail {
+    min-height: 100%;
+    color: var(--muted-foreground);
+    display: flex;
+    justify-content: center;
+    padding-top: 0.1875rem;
+    border-right: 2px solid var(--border);
+}
+.subagentBody {
+    min-width: 0;
+    display: grid;
+    gap: 0.625rem;
+}
+.subagentHeader {
+    min-width: 0;
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.subagentHeader > div {
+    min-width: 0;
+}
+.subagentHeader strong {
+    display: block;
+    overflow-wrap: anywhere;
+}
+.subagentHeader small {
+    margin-top: 0.125rem;
+}
+.subagentFinal {
+    margin: 0;
+    padding: 0.625rem 0.75rem;
+    border-left: 3px solid var(--border);
+    background: color-mix(in oklch, var(--muted) 55%, transparent);
+    border-radius: calc(var(--radius) - 2px);
+}
+.subagentDetails {
+    min-width: 0;
+}
+.subagentDetails summary {
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+}
+.subagentMessages {
+    display: grid;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+}
+.subagentMessage {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1rem minmax(6rem, auto) minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
+    padding: 0.45rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    background: var(--card);
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+}
+.subagentMessage span {
+    color: var(--foreground);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+.subagentMessage p {
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    line-height: 1.35;
 }
 .spin {
     animation: spin 1s linear infinite;
