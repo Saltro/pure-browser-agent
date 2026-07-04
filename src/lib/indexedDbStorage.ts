@@ -8,26 +8,6 @@ function canUseIndexedDb() {
   return typeof indexedDB !== 'undefined';
 }
 
-function canUseLocalStorage() {
-  return typeof localStorage !== 'undefined';
-}
-
-function createAsyncLocalStorage(): StateStorage<Promise<void>> {
-  return {
-    getItem: async (key) => (canUseLocalStorage() ? localStorage.getItem(key) : null),
-    setItem: async (key, value) => {
-      if (canUseLocalStorage()) {
-        localStorage.setItem(key, value);
-      }
-    },
-    removeItem: async (key) => {
-      if (canUseLocalStorage()) {
-        localStorage.removeItem(key);
-      }
-    }
-  };
-}
-
 function openDatabase(databaseName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(databaseName, 1);
@@ -47,7 +27,11 @@ function openDatabase(databaseName: string): Promise<IDBDatabase> {
 
 export function createIndexedDbStorage(name: string): StateStorage<Promise<void>> {
   if (!canUseIndexedDb()) {
-    return createAsyncLocalStorage();
+    return {
+      getItem: async () => null,
+      setItem: async () => undefined,
+      removeItem: async () => undefined
+    };
   }
 
   let databasePromise: Promise<IDBDatabase> | null = null;
@@ -74,25 +58,13 @@ export function createIndexedDbStorage(name: string): StateStorage<Promise<void>
 
   return {
     getItem: async (key) => {
-      try {
-        return (await run('readonly', (store) => store.get(key))) ?? createAsyncLocalStorage().getItem(key);
-      } catch {
-        return createAsyncLocalStorage().getItem(key);
-      }
+      return (await run('readonly', (store) => store.get(key))) ?? null;
     },
     setItem: async (key, value) => {
-      try {
-        await run('readwrite', (store) => store.put(value, key));
-      } catch {
-        await createAsyncLocalStorage().setItem(key, value);
-      }
+      await run('readwrite', (store) => store.put(value, key));
     },
     removeItem: async (key) => {
-      try {
-        await run('readwrite', (store) => store.delete(key));
-      } catch {
-        await createAsyncLocalStorage().removeItem(key);
-      }
+      await run('readwrite', (store) => store.delete(key));
     }
   };
 }

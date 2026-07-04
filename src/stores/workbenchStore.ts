@@ -153,6 +153,21 @@ function withToolStatus(messages: AppMessage[], eventId: string, status: 'pendin
   return messages.map((event) => (event.id === eventId && event.type === 'tool_call' ? { ...event, status } : event));
 }
 
+function syncTraceMessages(sessions: ConversationSession[], subagent: SubagentSession, patch: { status?: SubagentStatus; finalAnswer?: string } = {}) {
+  return sessions.map((session) =>
+    session.id === subagent.parentSessionId
+      ? touchSession(
+          session,
+          session.messages.map((event) =>
+            event.type === 'subagent_trace' && event.subagentSessionId === subagent.id
+              ? { ...event, messages: subagent.messages, status: patch.status ?? subagent.status, finalAnswer: patch.finalAnswer ?? event.finalAnswer }
+              : event
+          )
+        )
+      : session
+  );
+}
+
 export const useWorkbenchStore = create<Store>()(
   persist(
     (set, get) => ({
@@ -237,11 +252,13 @@ export const useWorkbenchStore = create<Store>()(
         set((state) => {
           const session = state.subagentSessions[sessionId];
           if (!session) return {};
+          const nextSession = touchSubagentSession(session, [...session.messages, { ...event, id: eventId, createdAt: now() } as AppMessage]);
           return {
             subagentSessions: {
               ...state.subagentSessions,
-              [sessionId]: touchSubagentSession(session, [...session.messages, { ...event, id: eventId, createdAt: now() } as AppMessage])
-            }
+              [sessionId]: nextSession
+            },
+            sessions: syncTraceMessages(state.sessions, nextSession)
           };
         });
         return eventId;
@@ -256,11 +273,13 @@ export const useWorkbenchStore = create<Store>()(
         set((state) => {
           const session = state.subagentSessions[sessionId];
           if (!session) return {};
+          const nextSession = touchSubagentSession(session, withPatchedMessage(session.messages, eventId, patch));
           return {
             subagentSessions: {
               ...state.subagentSessions,
-              [sessionId]: touchSubagentSession(session, withPatchedMessage(session.messages, eventId, patch))
-            }
+              [sessionId]: nextSession
+            },
+            sessions: syncTraceMessages(state.sessions, nextSession)
           };
         }),
       appendAssistantMessage: (eventId, chunk) =>
@@ -273,11 +292,13 @@ export const useWorkbenchStore = create<Store>()(
         set((state) => {
           const session = state.subagentSessions[sessionId];
           if (!session) return {};
+          const nextSession = touchSubagentSession(session, withAssistantChunk(session.messages, eventId, chunk));
           return {
             subagentSessions: {
               ...state.subagentSessions,
-              [sessionId]: touchSubagentSession(session, withAssistantChunk(session.messages, eventId, chunk))
-            }
+              [sessionId]: nextSession
+            },
+            sessions: syncTraceMessages(state.sessions, nextSession)
           };
         }),
       updateToolStatus: (eventId, status) =>
@@ -290,11 +311,13 @@ export const useWorkbenchStore = create<Store>()(
         set((state) => {
           const session = state.subagentSessions[sessionId];
           if (!session) return {};
+          const nextSession = touchSubagentSession(session, withToolStatus(session.messages, eventId, status));
           return {
             subagentSessions: {
               ...state.subagentSessions,
-              [sessionId]: touchSubagentSession(session, withToolStatus(session.messages, eventId, status))
-            }
+              [sessionId]: nextSession
+            },
+            sessions: syncTraceMessages(state.sessions, nextSession)
           };
         }),
       answerQuestion: (toolCallId, answers) => {
@@ -336,11 +359,13 @@ export const useWorkbenchStore = create<Store>()(
         set((state) => {
           const session = state.subagentSessions[sessionId];
           if (!session) return {};
+          const nextSession = { ...session, ...patch, updatedAt: now() };
           return {
             subagentSessions: {
               ...state.subagentSessions,
-              [sessionId]: { ...session, ...patch, updatedAt: now() }
-            }
+              [sessionId]: nextSession
+            },
+            sessions: syncTraceMessages(state.sessions, nextSession)
           };
         }),
       upsertSubagentTrace: (mainSessionId, trace) => {
@@ -378,18 +403,7 @@ export const useWorkbenchStore = create<Store>()(
           const subagent = state.subagentSessions[subagentSessionId];
           if (!subagent) return {};
           return {
-            sessions: state.sessions.map((session) =>
-              session.id === mainSessionId
-                ? touchSession(
-                    session,
-                    session.messages.map((event) =>
-                      event.type === 'subagent_trace' && event.subagentSessionId === subagentSessionId
-                        ? { ...event, messages: subagent.messages, status: patch.status ?? subagent.status, finalAnswer: patch.finalAnswer ?? event.finalAnswer }
-                        : event
-                    )
-                  )
-                : session
-            )
+            sessions: syncTraceMessages(state.sessions, { ...subagent, parentSessionId: mainSessionId }, patch)
           };
         }),
       createSession: () => {
