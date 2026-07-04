@@ -1,6 +1,16 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { AppMessage, ConversationSession, FileNode, LlmSettings, ThemeMode } from '../types/workbench';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { createIndexedDbStorage } from '../lib/indexedDbStorage';
+import type {
+  AgentQuestionAnswer,
+  AppMessage,
+  ConversationSession,
+  FileNode,
+  LlmSettings,
+  SubagentSession,
+  SubagentStatus,
+  ThemeMode
+} from '../types/workbench';
 
 const now = () => Date.now();
 const id = () => crypto.randomUUID();
@@ -53,12 +63,16 @@ type MessageDraft =
   | Omit<Extract<AppMessage, { type: 'assistant_message' }>, 'id' | 'createdAt'>
   | Omit<Extract<AppMessage, { type: 'tool_call' }>, 'id' | 'createdAt'>
   | Omit<Extract<AppMessage, { type: 'tool_result' }>, 'id' | 'createdAt'>
-  | Omit<Extract<AppMessage, { type: 'approval_request' }>, 'id' | 'createdAt'>;
+  | Omit<Extract<AppMessage, { type: 'approval_request' }>, 'id' | 'createdAt'>
+  | Omit<Extract<AppMessage, { type: 'question_request' }>, 'id' | 'createdAt'>
+  | Omit<Extract<AppMessage, { type: 'question_answer' }>, 'id' | 'createdAt'>
+  | Omit<Extract<AppMessage, { type: 'subagent_trace' }>, 'id' | 'createdAt'>;
 
 type Store = {
   files: FileNode[];
   activePath: string;
   sessions: ConversationSession[];
+  subagentSessions: Record<string, SubagentSession>;
   activeSessionId: string;
   terminalOutput: string;
   previewUrl: string;
@@ -92,9 +106,22 @@ type Store = {
   appendTerminal: (chunk: string) => void;
   clearTerminal: () => void;
   addMessage: (event: MessageDraft) => string;
+  addSessionMessage: (sessionId: string, event: MessageDraft) => string;
+  addSubagentMessage: (sessionId: string, event: MessageDraft) => string;
   updateMessage: (eventId: string, patch: Partial<AppMessage>) => void;
+  updateSessionMessage: (sessionId: string, eventId: string, patch: Partial<AppMessage>) => void;
+  updateSubagentMessage: (sessionId: string, eventId: string, patch: Partial<AppMessage>) => void;
   appendAssistantMessage: (eventId: string, chunk: string) => void;
+  appendSessionAssistantMessage: (sessionId: string, eventId: string, chunk: string) => void;
+  appendSubagentAssistantMessage: (sessionId: string, eventId: string, chunk: string) => void;
   updateToolStatus: (eventId: string, status: 'pending' | 'running' | 'success' | 'error') => void;
+  updateSessionToolStatus: (sessionId: string, eventId: string, status: 'pending' | 'running' | 'success' | 'error') => void;
+  updateSubagentToolStatus: (sessionId: string, eventId: string, status: 'pending' | 'running' | 'success' | 'error') => void;
+  answerQuestion: (toolCallId: string, answers: AgentQuestionAnswer[]) => void;
+  createSubagentSession: (parentSessionId: string, title: string, allowedTools: string[]) => string;
+  updateSubagentSession: (sessionId: string, patch: Partial<Pick<SubagentSession, 'title' | 'status' | 'allowedTools'>>) => void;
+  upsertSubagentTrace: (mainSessionId: string, trace: { toolCallId: string; subagentSessionId: string; title: string; status: SubagentStatus; finalAnswer?: string }) => string;
+  syncSubagentTrace: (mainSessionId: string, subagentSessionId: string, patch?: { status?: SubagentStatus; finalAnswer?: string }) => void;
   createSession: () => string;
   setActiveSession: (sessionId: string) => void;
   renameSession: (sessionId: string, title: string) => void;
@@ -110,12 +137,29 @@ function touchSession(session: ConversationSession, messages: AppMessage[]) {
   return { ...session, messages, updatedAt: now() };
 }
 
+function touchSubagentSession(session: SubagentSession, messages: AppMessage[]) {
+  return { ...session, messages, updatedAt: now() };
+}
+
+function withPatchedMessage(messages: AppMessage[], eventId: string, patch: Partial<AppMessage>) {
+  return messages.map((event) => (event.id === eventId ? ({ ...event, ...patch } as AppMessage) : event));
+}
+
+function withAssistantChunk(messages: AppMessage[], eventId: string, chunk: string) {
+  return messages.map((event) => (event.id === eventId && event.type === 'assistant_message' ? { ...event, content: event.content + chunk } : event));
+}
+
+function withToolStatus(messages: AppMessage[], eventId: string, status: 'pending' | 'running' | 'success' | 'error') {
+  return messages.map((event) => (event.id === eventId && event.type === 'tool_call' ? { ...event, status } : event));
+}
+
 export const useWorkbenchStore = create<Store>()(
   persist(
     (set, get) => ({
       files: starterFiles,
       activePath: 'src/main.jsx',
       sessions: [initialSession],
+      subagentSessions: {},
       activeSessionId: initialSession.id,
       terminalOutput: '',
       previewUrl: '',
@@ -177,51 +221,177 @@ export const useWorkbenchStore = create<Store>()(
         }),
       clearTerminal: () => set({ terminalOutput: '' }),
       addMessage: (event) => {
+        return get().addSessionMessage(get().activeSessionId, event);
+      },
+      addSessionMessage: (sessionId, event) => {
         const eventId = id();
         set((state) => ({
           sessions: state.sessions.map((session) =>
-            session.id === state.activeSessionId
-              ? touchSession(session, [...session.messages, { ...event, id: eventId, createdAt: now() } as AppMessage])
-              : session
+            session.id === sessionId ? touchSession(session, [...session.messages, { ...event, id: eventId, createdAt: now() } as AppMessage]) : session
           )
         }));
         return eventId;
       },
+      addSubagentMessage: (sessionId, event) => {
+        const eventId = id();
+        set((state) => {
+          const session = state.subagentSessions[sessionId];
+          if (!session) return {};
+          return {
+            subagentSessions: {
+              ...state.subagentSessions,
+              [sessionId]: touchSubagentSession(session, [...session.messages, { ...event, id: eventId, createdAt: now() } as AppMessage])
+            }
+          };
+        });
+        return eventId;
+      },
       updateMessage: (eventId, patch) =>
+        get().updateSessionMessage(get().activeSessionId, eventId, patch),
+      updateSessionMessage: (sessionId, eventId, patch) =>
         set((state) => ({
-          sessions: state.sessions.map((session) =>
-            session.id === state.activeSessionId
-              ? touchSession(
-                  session,
-                  session.messages.map((event) => (event.id === eventId ? ({ ...event, ...patch } as AppMessage) : event))
-                )
-              : session
-          )
+          sessions: state.sessions.map((session) => (session.id === sessionId ? touchSession(session, withPatchedMessage(session.messages, eventId, patch)) : session))
         })),
+      updateSubagentMessage: (sessionId, eventId, patch) =>
+        set((state) => {
+          const session = state.subagentSessions[sessionId];
+          if (!session) return {};
+          return {
+            subagentSessions: {
+              ...state.subagentSessions,
+              [sessionId]: touchSubagentSession(session, withPatchedMessage(session.messages, eventId, patch))
+            }
+          };
+        }),
       appendAssistantMessage: (eventId, chunk) =>
+        get().appendSessionAssistantMessage(get().activeSessionId, eventId, chunk),
+      appendSessionAssistantMessage: (sessionId, eventId, chunk) =>
         set((state) => ({
-          sessions: state.sessions.map((session) =>
-            session.id === state.activeSessionId
-              ? touchSession(
+          sessions: state.sessions.map((session) => (session.id === sessionId ? touchSession(session, withAssistantChunk(session.messages, eventId, chunk)) : session))
+        })),
+      appendSubagentAssistantMessage: (sessionId, eventId, chunk) =>
+        set((state) => {
+          const session = state.subagentSessions[sessionId];
+          if (!session) return {};
+          return {
+            subagentSessions: {
+              ...state.subagentSessions,
+              [sessionId]: touchSubagentSession(session, withAssistantChunk(session.messages, eventId, chunk))
+            }
+          };
+        }),
+      updateToolStatus: (eventId, status) =>
+        get().updateSessionToolStatus(get().activeSessionId, eventId, status),
+      updateSessionToolStatus: (sessionId, eventId, status) =>
+        set((state) => ({
+          sessions: state.sessions.map((session) => (session.id === sessionId ? touchSession(session, withToolStatus(session.messages, eventId, status)) : session))
+        })),
+      updateSubagentToolStatus: (sessionId, eventId, status) =>
+        set((state) => {
+          const session = state.subagentSessions[sessionId];
+          if (!session) return {};
+          return {
+            subagentSessions: {
+              ...state.subagentSessions,
+              [sessionId]: touchSubagentSession(session, withToolStatus(session.messages, eventId, status))
+            }
+          };
+        }),
+      answerQuestion: (toolCallId, answers) => {
+        set((state) => {
+          const answerMessage = { id: id(), type: 'question_answer', toolCallId, answers, createdAt: now() } as AppMessage;
+          const answerMessages = (messages: AppMessage[]) => [
+            ...messages.map((event): AppMessage => (event.type === 'question_request' && event.toolCallId === toolCallId ? { ...event, status: 'answered' } : event)),
+            answerMessage
+          ];
+          return {
+            sessions: state.sessions.map((session) =>
+              session.messages.some((event) => event.type === 'question_request' && event.toolCallId === toolCallId)
+                ? touchSession(session, answerMessages(session.messages))
+                : session
+            ),
+            subagentSessions: Object.fromEntries(
+              Object.entries(state.subagentSessions).map(([sessionId, session]) => [
+                sessionId,
+                session.messages.some((event) => event.type === 'question_request' && event.toolCallId === toolCallId)
+                  ? touchSubagentSession(session, answerMessages(session.messages))
+                  : session
+              ])
+            )
+          };
+        });
+      },
+      createSubagentSession: (parentSessionId, title, allowedTools) => {
+        const sessionId = id();
+        const timestamp = now();
+        set((state) => ({
+          subagentSessions: {
+            ...state.subagentSessions,
+            [sessionId]: { id: sessionId, parentSessionId, title, messages: [], createdAt: timestamp, updatedAt: timestamp, status: 'running', allowedTools }
+          }
+        }));
+        return sessionId;
+      },
+      updateSubagentSession: (sessionId, patch) =>
+        set((state) => {
+          const session = state.subagentSessions[sessionId];
+          if (!session) return {};
+          return {
+            subagentSessions: {
+              ...state.subagentSessions,
+              [sessionId]: { ...session, ...patch, updatedAt: now() }
+            }
+          };
+        }),
+      upsertSubagentTrace: (mainSessionId, trace) => {
+        let traceId = '';
+        set((state) => {
+          const subagent = state.subagentSessions[trace.subagentSessionId];
+          const messages = subagent?.messages ?? [];
+          return {
+            sessions: state.sessions.map((session) => {
+              if (session.id !== mainSessionId) return session;
+              const existing = session.messages.find(
+                (event) => event.type === 'subagent_trace' && event.subagentSessionId === trace.subagentSessionId && event.toolCallId === trace.toolCallId
+              );
+              if (existing?.type === 'subagent_trace') {
+                traceId = existing.id;
+                return touchSession(
                   session,
                   session.messages.map((event) =>
-                    event.id === eventId && event.type === 'assistant_message' ? { ...event, content: event.content + chunk } : event
+                    event.id === existing.id ? { ...existing, ...trace, messages, finalAnswer: trace.finalAnswer ?? existing.finalAnswer } : event
                   )
-                )
-              : session
-          )
-        })),
-      updateToolStatus: (eventId, status) =>
-        set((state) => ({
-          sessions: state.sessions.map((session) =>
-            session.id === state.activeSessionId
-              ? touchSession(
-                  session,
-                  session.messages.map((event) => (event.id === eventId && event.type === 'tool_call' ? { ...event, status } : event))
-                )
-              : session
-          )
-        })),
+                );
+              }
+              traceId = id();
+              return touchSession(session, [
+                ...session.messages,
+                { id: traceId, type: 'subagent_trace', ...trace, messages, createdAt: now() } as AppMessage
+              ]);
+            })
+          };
+        });
+        return traceId;
+      },
+      syncSubagentTrace: (mainSessionId, subagentSessionId, patch = {}) =>
+        set((state) => {
+          const subagent = state.subagentSessions[subagentSessionId];
+          if (!subagent) return {};
+          return {
+            sessions: state.sessions.map((session) =>
+              session.id === mainSessionId
+                ? touchSession(
+                    session,
+                    session.messages.map((event) =>
+                      event.type === 'subagent_trace' && event.subagentSessionId === subagentSessionId
+                        ? { ...event, messages: subagent.messages, status: patch.status ?? subagent.status, finalAnswer: patch.finalAnswer ?? event.finalAnswer }
+                        : event
+                    )
+                  )
+                : session
+            )
+          };
+        }),
       createSession: () => {
         const session = createSession(`Session ${get().sessions.length + 1}`);
         set((state) => ({ sessions: [session, ...state.sessions], activeSessionId: session.id }));
@@ -240,11 +410,13 @@ export const useWorkbenchStore = create<Store>()(
     }),
     {
       name: 'pure-browser-agent-state',
+      storage: createJSONStorage(() => createIndexedDbStorage('pure-browser-agent-db')),
       version: 2,
       partialize: (state) => ({
         files: state.files,
         activePath: state.activePath,
         sessions: state.sessions,
+        subagentSessions: state.subagentSessions,
         activeSessionId: state.activeSessionId,
         terminalOutput: state.terminalOutput,
         iframeUrl: state.iframeUrl,
