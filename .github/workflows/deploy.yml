@@ -34,14 +34,6 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Add COOP/COEP headers via _headers
-        run: |
-          cat > dist/_headers << 'EOF'
-          /*
-            Cross-Origin-Embedder-Policy: require-corp
-            Cross-Origin-Opener-Policy: same-origin
-          EOF
-
       - name: Add SPA fallback
         run: cp dist/index.html dist/404.html
 
