@@ -32,7 +32,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm run build -- --base /pure-browser-agent/
+        run: pnpm run build
 
       - name: Add COOP/COEP headers via _headers
         run: |
