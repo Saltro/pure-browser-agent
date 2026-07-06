@@ -14,6 +14,7 @@ import { memo, useEffect, useRef } from "react";
 import { approveAndContinue, denyAndContinue } from "../lib/agent";
 import type { AppMessage } from "../types/workbench";
 import { useWorkbenchStore } from "../stores/workbenchStore";
+import { Markdown } from "./Markdown";
 import { QuestionCard } from "./messages/QuestionCard";
 import { SubagentTrace } from "./messages/SubagentTrace";
 import { Badge } from "./ui/badge";
@@ -25,31 +26,6 @@ function timeLabel(ts: number) {
     minute: "2-digit",
     second: "2-digit",
   });
-}
-
-function renderContentWithCode(content: string) {
-  const parts: React.ReactNode[] = [];
-  const regex = /```(\w+)?\n([\s\S]*?)```/g;
-  let lastIndex = 0;
-  let match;
-  let key = 0;
-
-  while ((match = regex.exec(content)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(<p key={key++}>{content.slice(lastIndex, match.index)}</p>);
-    }
-    parts.push(
-      <pre key={key++}>
-        <code>{match[2]}</code>
-      </pre>,
-    );
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < content.length) {
-    parts.push(<p key={key++}>{content.slice(lastIndex)}</p>);
-  }
-
-  return parts.length > 0 ? parts : <p>{content}</p>;
 }
 
 const HIDDEN_TOOLS = new Set([
@@ -85,7 +61,7 @@ const MessageItem = memo(function MessageItem({
       <div className="message assistant">
         <Bot size={16} className={iconClassName} />
         <div>
-          {renderContentWithCode(event.content)}
+          <Markdown content={event.content} />
           {event.streaming && (
             <Loader2 className={`${iconClassName} spin inlineIcon`} size={12} />
           )}

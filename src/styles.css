@@ -263,7 +263,6 @@ input {
     grid-template-columns: 1.25rem minmax(0, 1fr);
     gap: 0.75rem;
     font-size: 0.9rem;
-    box-shadow: 0 1px 2px oklch(0 0 0 / 0.04);
 }
 .message p {
     margin: 0;
@@ -300,6 +299,7 @@ input {
 }
 .message.subagent {
     padding: 0;
+    display: block;
 }
 .approvalActions {
     display: flex;
@@ -329,6 +329,114 @@ pre {
     padding: 0.75rem;
     font-size: 0.78rem;
     overflow-x: auto;
+}
+
+.markdown-body {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+.markdown-body p {
+    margin: 0 0 0.6rem;
+    white-space: normal;
+}
+.markdown-body p:last-child {
+    margin-bottom: 0;
+}
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    margin: 0.8rem 0 0.4rem;
+    font-weight: 650;
+    line-height: 1.3;
+}
+.markdown-body h1 {
+    font-size: 1.3rem;
+}
+.markdown-body h2 {
+    font-size: 1.15rem;
+}
+.markdown-body h3 {
+    font-size: 1.05rem;
+}
+.markdown-body h4 {
+    font-size: 0.95rem;
+}
+.markdown-body ul,
+.markdown-body ol {
+    margin: 0.4rem 0;
+    padding-left: 1.4rem;
+}
+.markdown-body ul {
+    list-style: disc;
+}
+.markdown-body ol {
+    list-style: decimal;
+}
+.markdown-body li {
+    margin: 0.15rem 0;
+}
+.markdown-body li > p {
+    margin: 0;
+}
+.markdown-body a {
+    color: var(--ring);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.markdown-body a:hover {
+    opacity: 0.85;
+}
+.markdown-body blockquote {
+    margin: 0.5rem 0;
+    padding: 0.25rem 0.75rem;
+    border-left: 3px solid var(--border);
+    color: var(--muted-foreground);
+}
+.markdown-body code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+}
+.markdown-body pre {
+    margin: 0.5rem 0;
+}
+.markdown-body pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+}
+.markdown-body hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.75rem 0;
+}
+.markdown-body table {
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+    width: 100%;
+    font-size: 0.85rem;
+}
+.markdown-body th,
+.markdown-body td {
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.6rem;
+    text-align: left;
+}
+.markdown-body th {
+    background: var(--muted);
+    font-weight: 600;
+}
+.markdown-body.compact {
+    font-size: 0.82rem;
+}
+.markdown-body.compact p {
+    margin-bottom: 0.35rem;
 }
 .questionCard {
     width: 100%;
@@ -429,7 +537,6 @@ pre {
     display: flex;
     justify-content: center;
     padding-top: 0.1875rem;
-    border-right: 2px solid var(--border);
 }
 .subagentBody {
     min-width: 0;
@@ -475,7 +582,7 @@ pre {
 .subagentMessage {
     min-width: 0;
     display: grid;
-    grid-template-columns: 1rem minmax(6rem, auto) minmax(0, 1fr);
+    grid-template-columns: 1rem 6rem minmax(0, 1fr);
     gap: 0.5rem;
     align-items: start;
     padding: 0.45rem 0.5rem;
