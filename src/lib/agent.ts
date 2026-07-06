@@ -329,8 +329,11 @@ export async function runAgentTurn(userInput: string) {
     }
     throw error
   } finally {
-    if (!pendingTurnState && activeAbortController === abortController) {
-      activeAbortController = null
+    if (!pendingTurnState) {
+      store.setAgentRunning(false)
+      if (activeAbortController === abortController) {
+        activeAbortController = null
+      }
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Square, Send } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { interruptAgentTurn, runAgentTurn } from "../lib/agent";
 import { useWorkbenchStore } from "../stores/workbenchStore";
 import { Button } from "./ui/button";
@@ -7,16 +7,20 @@ import { Input } from "./ui/input";
 import { useToast } from "./ui/toast";
 
 export function ChatBox() {
-  const [input, setInput] = useState("");
+  const [hasText, setHasText] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const composing = useRef(false);
   const running = useWorkbenchStore((state) => state.isAgentRunning);
   const addMessage = useWorkbenchStore((state) => state.addMessage);
   const { toast } = useToast();
 
   async function submit(event?: FormEvent) {
     event?.preventDefault();
-    const value = input;
+    if (composing.current) return;
+    const value = inputRef.current?.value ?? "";
     if (!value.trim() || running) return;
-    setInput("");
+    if (inputRef.current) inputRef.current.value = "";
+    setHasText(false);
     try {
       await runAgentTurn(value);
     } catch (error) {
@@ -41,9 +45,15 @@ export function ChatBox() {
     <div className="composer">
       <form className="chatBox" onSubmit={submit}>
         <Input
-          value={input}
+          ref={inputRef}
           className="border-none focus-visible:ring-0"
-          onChange={(event) => setInput(event.target.value)}
+          onInput={(e) => setHasText((e.target as HTMLInputElement).value.length > 0)}
+          onCompositionStart={() => { composing.current = true; }}
+          onCompositionEnd={() => {
+            composing.current = false;
+            const el = inputRef.current;
+            if (el) setHasText(el.value.length > 0);
+          }}
           placeholder="Ask the agent to edit files, run commands, open a URL, or explain the workspace..."
         />
         {running ? (
@@ -51,7 +61,7 @@ export function ChatBox() {
             <Square size={15} /> Stop
           </Button>
         ) : (
-          <Button disabled={!input.trim()}>
+          <Button disabled={!hasText}>
             <Send size={15} /> Send
           </Button>
         )}

@@ -298,7 +298,6 @@ input {
 .message.approval {
     border-color: oklch(0.75 0.16 70 / 0.45);
 }
-.message.question,
 .message.subagent {
     padding: 0;
 }
@@ -333,10 +332,6 @@ pre {
 }
 .questionCard {
     width: 100%;
-    display: grid;
-    grid-template-columns: 1.25rem minmax(0, 1fr);
-    gap: 0.75rem;
-    padding: 0.875rem 1rem;
 }
 .questionCard.compact {
     align-items: start;
@@ -379,6 +374,7 @@ pre {
     font-weight: 650;
     line-height: 1.35;
     overflow-wrap: anywhere;
+    margin-bottom: 8px;
 }
 .questionField p,
 .questionSummary p {

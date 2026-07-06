@@ -4,6 +4,7 @@ import {
   ChevronRight,
   CircleAlert,
   Clock,
+  HelpCircle,
   Loader2,
   ShieldAlert,
   User,
@@ -126,6 +127,7 @@ const MessageItem = memo(function MessageItem({
   if (event.type === "question_request") {
     return (
       <div className="message question">
+        <HelpCircle size={16} className="questionIcon" />
         <QuestionCard event={event} />
       </div>
     );
